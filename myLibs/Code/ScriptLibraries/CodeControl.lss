@@ -1,0 +1,632 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	Library CodeControl
+	Created Apr 2, 2019 by Alexandr S. Olympiev/OTTO/RU
+	Description: Comments for Library
+%END REM
+Option Public
+Option Declare
+Use "DBDesigner"
+Use "DataBaseTools"
+Use "ScriptLibrary"
+
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class CC_CoreClass As Interface
+Declare Class APIBaseClass
+Declare Class LotusScriptRecompiler As APIBaseClass
+Declare Class LibControl As Interface
+Declare Sub Initialize
+Declare Private Function CC_setVariant(sLib As ScriptLibrary) As Integer
+Declare Function CC_getDb () As NotesDatabase
+Declare Function CC_createLibDoc (slib As NotesDocument) As NotesDocument
+Declare Private Function CC_getNames (objs As Variant) As Variant
+Declare Function CC_createLibDocWithVar (slib As NotesDocument, var As integer) As NotesDocument
+Declare Function CC_RecompileDB(db As notesdatabase) As Boolean
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const DesignElem = {CodeControl}
+Private nLine As String
+Private CC_Db As NotesDatabase
+
+Declare Function NSFDbOpen Lib "nnotes.dll" (ByVal dbName As String, hDb As Long) As Integer
+Declare Function NSFDbClose Lib "nnotes.dll" (ByVal hDb As Long) As Integer
+
+Declare Function NSFNoteLSCompile Lib "nnotes.dll" (ByVal hDb As Long, _
+ByVal hNote As Long, ByVal dwFlags As Long) As Integer
+Declare Function NSFNoteSign Lib "nnotes.dll" (ByVal hNote As Long) As Integer
+Declare Function NSFNoteUpdate Lib "nnotes.dll" (ByVal hNote As Long, _
+ByVal flags As Integer) As Integer
+
+
+'********************************************
+'Class CC_CoreClass
+'DCS-Olympiev: Jul 30, 2019
+'********************************************
+Class CC_CoreClass As Interface
+	Private doc As NotesDocument
+	Private db As NotesDatabase
+	
+Sub New
+	On Error GoTo ErrH
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Sub
+
+
+
+End Class
+
+'================================================================
+' Base class for working with Notes databases at the API level
+'================================================================
+Class APIBaseClass
+	Private db As NotesDatabase
+	Private hDb As Long
+	Private lastError As String
+	
+	
+	Public Sub New ()
+		'** nothing to instantiate in the base class
+	End Sub
+	
+	
+	Public Sub Delete ()
+		Call CloseDatabase()
+	End Sub
+	
+	
+	Public Function OpenDatabase (db As NotesDatabase) As Integer
+		On Error GoTo processError
+		
+		If (hDb > 0) Then
+			Call CloseDatabase()
+		End If
+		
+		'** reset the internals
+		Set Me.db = db
+		lastError = ""
+		
+		Dim pathName As String*256
+		Dim result As Integer
+		
+		'** create a proper network path name with OSPathNetConstruct
+		Call OSPathNetConstruct(0, db.Server, db.FilePath, pathName)
+		
+		'** open the database and get a handle with NSFDbOpen
+		result = NSFDbOpen(pathName, hDb)
+		If result = 0 Then
+			OpenDatabase = True
+		Else
+			Call SetLastError("Cannot open database " & db.FilePath & " on server " & db.Server, result)
+		End If
+		
+		Exit Function
+		
+processError:
+		Call SetLastError("Error opening database", 0)
+		Exit Function
+		
+	End Function
+	
+	
+	Public Sub CloseDatabase ()
+		On Error Resume Next
+		
+		If (hDb > 0) Then
+			Call NSFDbClose(hDb)
+		End If
+		
+		Set db = Nothing
+		hDb = 0
+		lastError = ""
+	End Sub
+	
+	
+	Private Function SetLastError (errText As String, apiResultCode As Integer) As String
+		If (apiResultCode <> 0) Then
+			LastError = "API Error " & apiResultCode & ": " & GetAPIError(apiResultCode)
+		ElseIf (Err > 0) Then
+			LastError = "Notes Error " & Err & ": " & Error$
+		Else
+			LastError = ""
+		End If
+		
+		If (Len(errText) > 0) Then
+			LastError = errText & ". " & LastError
+		End If
+	End Function
+	
+	
+	Public Function GetLastError () As String
+		GetLastError = LastError
+	End Function
+	
+	
+	Public Function GetAPIError (errorCode As Integer) As String
+		Dim errorString As String*256
+		Dim returnErrorString As String
+		Dim resultStringLength As Long
+		Dim errorCodeTranslated As Integer
+		
+		Const ERR_MASK = &H3fff
+		Const PKG_MASK = &H3f00
+		Const ERRNUM_MASK = &H00ff
+		
+		'** mask off the top 2 bits of the errorCode that was returned; this is
+		'** what the ERR macro in the API does
+		errorCodeTranslated = (errorCode And ERR_MASK)
+		
+		'** get the error code translation using the OSLoadString API function
+		resultStringLength = OSLoadString(0, errorCodeTranslated, errorString, Len(errorString) - 1)
+		
+		'** strip off the null-termination on the string before you return it
+		If (InStr(errorString, Chr(0)) > 0) Then
+			returnErrorString = Left$(errorString, InStr(errorString, Chr(0)) - 1)
+		Else
+			returnErrorString = errorString
+		End If
+		
+		GetAPIError = returnErrorString
+		
+	End Function
+	
+End Class
+
+
+'================================================================
+' Special subclass for recompiling a note/doc in a database
+'================================================================
+Class LotusScriptRecompiler As APIBaseClass
+	
+	Public Function RecompileLSByNoteID (noteID As String) As Integer
+		On Error GoTo processError
+		
+		If (db Is Nothing) Then
+			Call SetLastError("Database is not open", 0)
+			Exit Function
+		End If
+		
+		Dim doc As NotesDocument
+		Set doc = db.GetDocumentByID(noteID)
+		RecompileLSByNoteID = RecompileLS(doc)
+		Exit Function
+		
+processError:
+		Call SetLastError("Error recompiling LotusScript for " & noteID, 0)
+		Exit Function
+		
+	End Function
+	
+	
+	Public Function RecompileLSByUNID (unid As String) As Integer
+		On Error GoTo processError
+		
+		If (db Is Nothing) Then
+			Call SetLastError("Database is not open", 0)
+			Exit Function
+		End If
+		
+		Dim doc As NotesDocument
+		Set doc = db.GetDocumentByUNID(unid)
+		RecompileLSByUNID = RecompileLS(doc)
+		Exit Function
+		
+processError:
+		Call SetLastError("Error recompiling LotusScript for " & unid, 0)
+		Exit Function
+		
+	End Function
+	
+	
+	Public Function RecompileLS (doc As NotesDocument) As Integer
+		On Error GoTo processError
+		
+		Dim hNote As Long
+		Dim unid As String
+		Dim result As Integer
+		
+		If (hDb = 0) Then
+			Call SetLastError("Database is not open", 0)
+			Exit Function
+		ElseIf (doc Is Nothing) Then
+			Call SetLastError("Invalid document reference", 0)
+			Exit Function
+		End If
+		
+		'** super-special-secret way of getting an API handle to a NotesDocument
+		hNote = doc.Handle
+		unid = doc.UniversalID
+		
+		'** first, we compile the note
+		result = NSFNoteLSCompile(hDb, hNote, 0)
+		If (result <> 0) Then
+			Call SetLastError("Cannot compile LotusScript for " & GetTitle(doc), result)
+			Exit Function
+		End If
+		
+		'** then we sign it
+		result = NSFNoteSign(hNote)
+		If (result <> 0) Then
+			Call SetLastError("Cannot sign " & GetTitle(doc), result)
+			Exit Function
+		End If
+		
+		'** then we save it
+		result = NSFNoteUpdate(hNote, 0)
+		If (result <> 0) Then
+			Call SetLastError("Cannot save " & GetTitle(doc), result)
+			Exit Function
+		End If
+		
+		'** update the in-memory reference to the object
+		Delete doc
+		Set doc = db.GetDocumentByUNID(unid)
+		
+		'** a little trick to avoid this message on recompiled forms:
+		'** This document has been altered since the last time it was signed! Intentional tampering may have occurred.
+		Call doc.Sign()
+		Call doc.Save(True, False)
+		
+		lastError = ""
+		RecompileLS = True
+		Exit Function
+		
+processError:
+		Call SetLastError("Error recompiling LotusScript for " & GetTitle(doc), 0)
+		Exit Function
+		
+	End Function
+	
+	
+	Public Function GetTitle (doc As NotesDocument) As String
+		On Error Resume Next
+		If (doc Is Nothing) Then
+			Exit Function
+		End If
+		
+		Dim title As String
+		title = doc.~$Title(0)
+		If (InStr(title, "|") > 0) Then
+			title = StrLeft(title, "|")
+		End If
+		
+		If (title = "") Then
+			title = "(untitled)"
+		End If
+		
+		GetTitle = |"| & title & |"|
+	End Function
+End Class
+
+'********************************************
+'Class LibControl
+'Olimpus: Apr 28, 2021
+'Description: Comments for Class
+'********************************************
+
+Class LibControl As Interface
+	
+	Sub New (doc As notesdocument)
+		On Error GoTo ErrH
+
+
+
+		GoTo EndH
+ErrH:
+		stop
+		logger.error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+		Resume endH
+EndH:
+	End Sub
+
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:1:CC_setVariant:6:8
+'********************************************
+'Function CC_setVariant
+'Return String
+'Olimpus: Apr 27, 2021
+'********************************************
+Private Function CC_setVariant(sLib As ScriptLibrary) As Integer
+	On Error GoTo ErrH
+
+	Dim dc As NotesDocumentCollection
+	Set dc = CC_getDb.getView("LSLibraries").Getalldocumentsbykey(sLib.getName())
+
+	Dim doc As NotesDocument
+	Dim sL As ScriptLibrary
+	Dim sLDOc As NotesDocument
+	Dim var As Integer
+	Dim s As New NotesSession
+	
+	Set doc = dc.Getfirstdocument()
+	While Not doc Is Nothing
+		If var <= doc.Getitemvalue("variant")(0) Then
+			Set slDoc = s.Resolve(doc.Getitemvalue("url")(0))
+			Set sL = New ScriptLibrary(slDoc)
+			If (sLib.equals(sL)) Then
+				CC_setVariant = doc.Getitemvalue("variant")(0)
+				GoTo endH
+			Else 
+				var = doc.Getitemvalue("variant")(0) + 1
+			End If
+		End If
+		Set doc = dc.getNextDocument(doc)
+	Wend
+	
+	CC_setVariant = var
+	
+	GoTo EndH
+ErrH:
+	stop
+	logger.error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:CC_getDb:5:8
+' Library CodeControl -> Function CC_getDb
+' NotesDatabase
+' DCS-Olympiev Apr 2, 2019
+' *********************************************************************************
+Function CC_getDb () As NotesDatabase
+	On Error GoTo ErrH
+
+	If CC_db Is Nothing Then Set CC_Db = DBT_GetDbBySearchKey("CODECONTROL")
+	Set CC_getDb = CC_Db
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:CC_createLibDoc:6:8
+'********************************************
+'Function CC_createLibDoc
+'Return Boolean
+'Olimpus: Apr 16, 2021
+'********************************************
+Function CC_createLibDoc (slib As NotesDocument) As NotesDocument
+	On Error GoTo ErrH
+
+	Dim lDoc As NotesDocument
+	Dim lDb As NotesDatabase
+	Set lDb = sLib.Parentdatabase
+	
+	Set lDoc = CC_getDb().Createdocument()
+	
+	lDoc.Replaceitemvalue "form", "lsLibrary"
+	lDoc.Replaceitemvalue "UNID", lDoc.Universalid
+	lDoc.Replaceitemvalue "date", Now
+	lDoc.Replaceitemvalue "url", slib.Notesurl
+	lDoc.Replaceitemvalue "database", lDb.Title
+	lDoc.Replaceitemvalue "dbServer", lDb.Server
+	lDoc.Replaceitemvalue "dbPath", lDb.Filepath
+	
+	lDoc.Replaceitemvalue "Title", slib.getItemValue("$Title")(0)
+	lDoc.Replaceitemvalue "PublicAccess", slib.getItemValue("$PublicAccess")(0)
+	lDoc.Replaceitemvalue "DesignerVersion", slib.getItemValue("$DesignerVersion")(0)
+	lDoc.Replaceitemvalue "POID", slib.getItemValue("$POID")(0)
+	lDoc.Replaceitemvalue "Flags", slib.getItemValue("$Flags")(0)
+	lDoc.Replaceitemvalue "UpdatedBy", slib.getItemValue("$UpdatedBy")(0)
+	
+	Dim libr As New ScriptLibrary(slib)
+	lDoc.Replaceitemvalue "name", libr.getName()
+	lDoc.Replaceitemvalue "use", cc_getNames(libr.getLinkLibs())
+	lDoc.Replaceitemvalue "declaredFunctions", cc_getNames(libr.getDeclaredFunctions())
+	lDoc.Replaceitemvalue "constants", cc_getNames(libr.getConstants())
+	lDoc.Replaceitemvalue "variables", cc_getNames(libr.getVariables())
+	lDoc.Replaceitemvalue "types", cc_getNames(libr.getTypes())
+	lDoc.Replaceitemvalue "classes", cc_getNames(libr.getClasses())
+	lDoc.Replaceitemvalue "methods", cc_getNames(libr.getMethods())
+	
+	lDoc.Replaceitemvalue "variant", CC_setVariant(libr)
+	
+	Set CC_createLibDoc = lDoc
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:CC_getNames:6:8
+'********************************************
+'Function CC_getNames
+'Return Variant
+'Olimpus: Apr 16, 2021
+'********************************************
+Private Function CC_getNames (objs As Variant) As Variant
+	On Error GoTo ErrH
+
+	
+	Dim names() As String
+	Dim i As Integer
+	
+	If IsObject(objs) Then
+		If objs.count = 0 Then
+			CC_getNames = ""
+			GoTo EndH
+		End If
+		Dim obj As Variant
+		Set obj = objs.getfirstObject()
+		While Not obj Is Nothing
+			ReDim Preserve names(i) As String
+			names(i) = obj.getName()
+			i = i + 1		
+			Set obj = objs.getNextObject()
+		Wend 
+	Else
+		ForAll ob In objs
+			ReDim Preserve names(i) As String
+			names(i) = ob
+			i = i + 1	
+		End ForAll
+	End If
+
+	CC_getNames = names
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:CC_createLibDocWithVar:6:8
+'********************************************
+'Function CC_createLibDocWithVar
+'Return NotesDocument
+'Olimpus: Apr 27, 2021
+'********************************************
+Function CC_createLibDocWithVar (slib As NotesDocument, var As integer) As NotesDocument
+	On Error GoTo ErrH
+
+	Dim lDoc As NotesDocument
+	Dim lDb As NotesDatabase
+	Set lDb = sLib.Parentdatabase
+	
+	Set lDoc = CC_getDb().getView("LSLibByURL").Getdocumentbykey(sLib.notesURL)
+	
+	If lDoc Is Nothing Then
+		Set lDoc = CC_getDb().Createdocument()
+		lDoc.Replaceitemvalue "form", "lsLibrary"
+		lDoc.Replaceitemvalue "UNID", lDoc.Universalid
+		lDoc.Replaceitemvalue "database", lDb.Title
+		lDoc.Replaceitemvalue "dbServer", lDb.Server
+		lDoc.Replaceitemvalue "dbPath", lDb.Filepath
+	End If
+	
+	lDoc.Replaceitemvalue "Title", slib.getItemValue("$Title")(0)
+	lDoc.Replaceitemvalue "PublicAccess", slib.getItemValue("$PublicAccess")(0)
+	lDoc.Replaceitemvalue "DesignerVersion", slib.getItemValue("$DesignerVersion")(0)
+	lDoc.Replaceitemvalue "POID", slib.getItemValue("$POID")(0)
+	lDoc.Replaceitemvalue "Flags", slib.getItemValue("$Flags")(0)
+	lDoc.Replaceitemvalue "UpdatedBy", slib.getItemValue("$UpdatedBy")(0)
+	lDoc.Replaceitemvalue "date", Now
+	lDoc.Replaceitemvalue "url", slib.Notesurl
+	lDoc.Replaceitemvalue "variant", var
+	
+	Dim libr As New ScriptLibrary(slib)
+	lDoc.Replaceitemvalue "name", libr.getName()
+	lDoc.Replaceitemvalue "use", cc_getNames(libr.getLinkLibs())
+	lDoc.Replaceitemvalue "declaredFunctions", cc_getNames(libr.getDeclaredFunctions())
+	lDoc.Replaceitemvalue "constants", cc_getNames(libr.getConstants())
+	lDoc.Replaceitemvalue "variables", cc_getNames(libr.getVariables())
+	lDoc.Replaceitemvalue "types", cc_getNames(libr.getTypes())
+	lDoc.Replaceitemvalue "classes", cc_getNames(libr.getClasses())
+	lDoc.Replaceitemvalue "methods", cc_getNames(libr.getMethods())		
+	Set CC_createLibDocWithVar = lDoc
+
+	GoTo EndH
+ErrH:
+	stop
+	logger.error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:CC_RecompileDB:6:8
+'********************************************
+'Function CC_RecompileDB
+'Return Boolean
+'Olimpus: Apr 16, 2021
+'********************************************
+Function CC_RecompileDB(db As notesdatabase) As Boolean
+	On Error GoTo ErrH
+
+	'** As a test, let's recompile all the agents, script libraries, and forms
+	'** in this database
+	Dim nc As NotesNoteCollection
+	Dim recompiler As New LotusScriptRecompiler
+	Dim noteID As String
+	
+	'** create our recompiler object
+	Call recompiler.OpenDatabase(db)
+	If (recompiler.GetLastError <> "") Then
+		Print recompiler.GetLastError
+		Exit Function
+	End If
+	
+	'** compile the script libraries first (note that this will NOT build a
+	'** dependency tree -- rather, we'll try to brute-force around the 
+	'** dependencies by recompiling until either (A) there are no errors,
+	'** or (B) the number of errors we get is the same as we got last time)
+	Dim errCount As Integer, lastCount As Integer
+	Set nc = db.CreateNoteCollection(False)
+	nc.SelectScriptLibraries = True
+	Call nc.BuildCollection
+	
+	Print "SCRIPT LIBRARIES"
+	Do
+		lastCount = errCount
+		errCount = 0
+		
+		noteID = nc.GetFirstNoteId
+		Do Until (noteID = "")
+			If recompiler.RecompileLSByNoteID(noteID) Then
+				Print "Successfully recompiled " & _
+				recompiler.GetTitle(db.GetDocumentByID(noteID))
+			Else
+				Print recompiler.GetLastError
+				errCount = errCount + 1
+			End If
+			
+			noteID = nc.GetNextNoteId(noteID)
+		Loop
+	Loop Until ( (errCount = 0) Or (errCount = lastCount) )
+	
+	'** then compile everything else
+	Set nc = db.CreateNoteCollection(False)
+	nc.SelectAgents = True
+	nc.SelectForms = True
+	Call nc.BuildCollection
+	
+	Print "FORMS AND AGENTS"
+	noteID = nc.GetFirstNoteId
+	Do Until (noteID = "")
+		If recompiler.RecompileLSByNoteID(noteID) Then
+			Print "Successfully recompiled " & _
+			recompiler.GetTitle(db.GetDocumentByID(noteID))
+		Else
+			Print recompiler.GetLastError
+		End If
+		
+		noteID = nc.GetNextNoteId(noteID)
+	Loop
+	
+	Call recompiler.CloseDatabase()
+	CC_RecompileDB = True
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function

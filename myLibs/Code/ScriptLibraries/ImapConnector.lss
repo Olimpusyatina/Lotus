@@ -1,0 +1,381 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library ImapConnector
+'Olimpus: 10.12.2020
+'********************************************
+Option Public
+Option Declare
+Use "Collections"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class ImapConnectorInterface As Interface
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {ImapConnector}
+
+Private Const IMAP_CONNECTOR_AGENT_NAME = "OutlookConnector"
+'********************************************
+'Class ImapConnector
+'Olimpus: 10.12.2020
+'____________________________________________
+'Обязательные поля:
+'imapEmail - имя пользователя 
+'imapPassword - пароль пользователя
+'server - сервер Лотуса, где лежит почтовая БД
+'filePath - путь к Лотусовой почтовой БД
+'____________________________________________
+'Необязательные поля:
+'imapServer - сервер, куда подключаемся. По умолчанию Outlook.office365.com
+'imapPort - порт, по которому подключаемся. По умолчанию 993
+'imapFolder - папка к которой подключаемся. По умолчанию INBOX
+'folder - папка, куда складывать в Лотусе. По умолчанию ($Inbox)
+'header - пометка письма в подключаемой почте, чтобы не подхватывать письма второй раз. По умлолчанию ProcessedByLotus
+'____________________________________________
+'getMail - основной метод - получаем почту
+'********************************************
+Class ImapConnectorInterface As Interface
+	Private imapServer_ex As String
+	Private imapPort_ex As String
+	Private imapEmail_ex As String
+	Private imapPassword_ex As String
+	Private server_ex As String
+	Private filePath_ex As String
+	Private imapFolder_ex As String
+	Private folder_ex As String
+	Private header_ex As String
+	
+	Sub New
+		On Error GoTo ErrH
+
+		folder_ex = "($Inbox)"
+		imapFolder_ex = "INBOX"
+		imapPort_ex = "993"
+		imapServer_ex = "Outlook.office365.com"
+		header_ex = "ProcessedByLotus"		
+		
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Sub getDocuments
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Sub getMail()
+'		On Error GoTo ErrH
+'		
+'		If server = "" Then Error 9930, "Не указан сервер Лотуса" 
+'		If filePath = "" Then Error 9931, "Не указан путь к БД"
+'		If imapEmail = "" Then Error 9932, "Не указан пользователь"
+'		If imapPassword = "" Then Error 9933, "Не указан пароль"
+'		
+'		Dim s As New NotesSession
+'		Dim doc As NotesDocument
+'		
+'		Set doc = s.currentDatabase.Createdocument()
+'		Call doc.Replaceitemvalue("imapServer", imapServer)
+'		Call doc.Replaceitemvalue("imapPort", imapPort)
+'		Call doc.Replaceitemvalue("imapEmail", imapEmail)
+'		Call doc.Replaceitemvalue("imapPassword", imapPassword)
+'		Call doc.Replaceitemvalue("server", server)
+'		Call doc.Replaceitemvalue("filePath", filePath)
+'		Call doc.Replaceitemvalue("imapFolder", imapFolder)
+'		Call doc.Replaceitemvalue("folder", folder)
+'		Call doc.Replaceitemvalue("header", header)
+'		Call doc.Save(True, False)
+'		Dim agent As NotesAgent
+'		Set agent = s.Currentdatabase.Getagent(IMAP_CONNECTOR_AGENT_NAME)	
+'		Call agent.Run(doc.Noteid)
+'		
+'		GoTo EndH
+'ErrH:
+'		stop
+'		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Sub
+	'********************************************
+	'Property Get header
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get header As String
+'	On Error GoTo ErrH
+'
+'	header = header_ex	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Set header
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Set header As String
+'	On Error GoTo ErrH
+'
+'	header_ex = header	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Get folder
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get folder As String
+'	On Error GoTo ErrH
+'
+'	folder = folder_ex	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Set folder
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Set folder As String
+'	On Error GoTo ErrH
+'
+'	folder_ex = folder	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Get imapFolder
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get imapFolder As String
+'	On Error GoTo ErrH
+'
+'	imapFolder = imapFolder_ex	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Set imapFolder
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Set imapFolder As String
+'	On Error GoTo ErrH
+'
+'	imapFolder_ex = imapFolder	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Set filePath
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Set filePath As String
+'	On Error GoTo ErrH
+'
+'	filePath_ex = filePath	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Get filePath
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get filePath As String
+'	On Error GoTo ErrH
+'
+'	filePath = filePath_ex	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Set server
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Set server As String
+'	On Error GoTo ErrH
+'
+'	server_ex = server	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Get server
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get server As String
+'	On Error GoTo ErrH
+'
+'	server = server_ex
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Get imapPassword
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get imapPassword As String
+'	On Error GoTo ErrH
+'
+'	imapPassword = imapPassword_ex	
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+ 	'********************************************
+	'Property Set imapPassword
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Set imapPassword As String
+'	On Error GoTo ErrH
+'
+'	imapPassword_ex = imapPassword
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Set imapEmail
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Set imapEmail As String
+'	On Error GoTo ErrH
+'
+'		imapEmail_ex = imapEmail
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Get imapEmail
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get imapEmail As String
+'	On Error GoTo ErrH
+'
+'	imapEmail = imapEmail_ex
+'	
+'	GoTo EndH
+'ErrH:
+'	stop
+'	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Set imapServer
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Set imapServer As String
+'		On Error GoTo ErrH
+'
+'		imapServer_ex = imapServer
+'		
+'		GoTo EndH
+'ErrH:
+'		stop
+'		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Get imapServer
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get imapServer As String
+'		On Error GoTo ErrH
+'
+'		imapServer = imapServer_ex
+'		
+'		GoTo EndH
+'ErrH:
+'		stop
+'		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+	'********************************************
+	'Property Get imapPort
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+'	Public Property Get imapPort As String
+'		On Error GoTo ErrH
+'
+'		imapPort_ex = imapPort
+'		
+'		GoTo EndH
+'ErrH:
+'		stop
+'		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+'EndH:
+'	End Property
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+

@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<note class='form' xmlns='http://www.lotus.com/dxl' version='11.0' maintenanceversion='1.0'
+ replicaid='432586CD00293F3C'>
+<noteinfo noteid='2b6' unid='EE32A0E28D911D75432586CD002A4E2F' sequence='2'>
+<created><datetime>20210506T104205,27+03</datetime></created>
+<modified><datetime>20210506T105913,98+03</datetime></modified>
+<revised><datetime>20210506T105913,97+03</datetime></revised>
+<lastaccessed><datetime>20210506T105913,97+03</datetime></lastaccessed>
+<addedtofile><datetime>20210506T104205,32+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
+<wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
+<item name='$HTMLCode' sign='true'>
+<rawitemdata type='1'>
+X/8QAAIADwAHAAAAAAAAAA==
+</rawitemdata></item>
+<item name='$TITLE'><textlist><text>Экспорт контактов в csv</text><text>ExportContactsToCsv</text></textlist></item>
+<item name='$Comment' sign='true'><text/></item>
+<item name='$Info' sign='true'>
+<rawitemdata type='1'>
+hhgBAIAAAAAAgAAAAQABAP///wAQAAAA
+</rawitemdata></item>
+<item name='$Flags'><text/></item>
+<item name='$DesignerVersion'><text>8.5.3</text></item>
+<item name='USERNAME' placeholder='true'>
+<rawitemdata type='0'>
+</rawitemdata></item>
+<item name='Mapping' placeholder='true'>
+<rawitemdata type='0'>
+</rawitemdata></item>
+<item name='$Fields'><textlist><text>Mapping</text><text>userName</text></textlist></item>
+<item name='$$ScriptName' summary='false' sign='true'><text>ExportContactsToCsv</text></item>
+<item name='$Body' sign='true'>
+<rawitemdata type='1'>
+gQKC/1oAAQAAAAAAAAAAAKAFAACgBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAABAAAAAJSHAAAAAAAAAAAAAAAAAQAAAAQAAACDBAEAhf8IAAEAAAqBAoMEAQCF/wgA
+AQAACt0GAACK//7/UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHgAeAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsP8UAAAAAAAAAAAAAQAAAAAAAACK/ywA
+jgAABQAwAgAAAAAAAAIBAAAKAAAAAAAAAAAIAAAAAAB1c2VyTmFtZd4GAACK/4X/CAABAAAKgQKD
+BAEAhf8IAAEAAAqBAoMEAQCF/wgAAQAACt0GAACt/6n/XgADABgAAABSAFIACAASAAIAxgsAAAAA
+AADtAQMABwAMAAUACTBTMEUAAAAoAAIAog8AAAAAAAABABIAQ3N2Q29udGFjdHNDcmVhdG9y7QID
+AAcACgADAAkwUgCr/x4AABBAC7YBAQABAAAKBd0F6gXxBe8F7gXwBfJyCAEA8PDwAGIOAQCCAAAA
+AAAAAAAAqgLeBgAArgCF/wgAAQAACoECgwQBAIX/CAABAAAKgQKDBAEAhf8IAAEAAArdBgAAiv/+
+/1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AHgAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAIr/LACKAAEFCEACAAAAAAAAAgEAAAoAAAAAAAAAAAcAAAAA
+AE1hcHBpbmcAYg4BAIQAAAAAAAAAAADeBgAAiv+F/wgAAQAACoECgwQBAIX/CAABAAAKgQKDBAEA
+hf8IAAEAAAo=
+</rawitemdata></item></note>
+

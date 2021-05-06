@@ -1,0 +1,395 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library remoteAgentControl
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Option Public
+Option Declare
+Use "DataBaseTools"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class RemoteAgentControll
+Declare Sub Initialize
+Declare Sub Terminate
+Declare Function RAC_CreateDocumentForAgent (agentName As String) As NotesDocument
+Declare Function RAC_runAgentOnServer (agentName As String) As NotesAgent
+Declare Function RAC_GetDB() As NotesDatabase
+Declare Function RAC_endProcess (lucky As Boolean) As Boolean
+Declare Function RAC_getRequestDoc As NotesDocument
+Declare Function RAC_setComment (comment As Variant)
+Declare Function RAC_runAgentOnServerWithDocument() As NotesAgent
+Declare Function RAC_getDocumentForAgent (agent As NotesAgent) As NotesDocument
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = "remoteAgentControl"
+
+Const RAC_REQUESTDB_KEY = "AGENT_REQUEST"
+Const RAC_AGENT_NAME = "rac_AgentName"
+Const RAC_TEMPLATE_DOCUMENT_FORM = "remoteAgent"
+Const RAC_EXTERNALDB_NAME = "rac_ExtDbKey"
+Const RAC_EXTERNALDB_SERVER = "rac_ExtDBServer"
+Const RAC_EXTERNALDB_FILEPATH = "rac_ExtDbFilePath"
+Const RAC_EXTERNALDB_REPLICAID = "rac_ExtDbReplicaID"
+Const RAC_REQUEST_COMMENT_FIELD = "rac_Comment"
+
+Private racDb As NotesDatabase
+Private racDoc As NotesDocument
+Private remoteAgentControll As remoteAgentControll
+'********************************************
+'Class RemoteAgentControll
+'Olimpus: Oct 11, 2019
+'********************************************
+Class RemoteAgentControll
+	Private requestDoc As NotesDocument
+	Private isOnServ As Boolean
+	Private agent As NotesAgent
+	Private db As NotesDatabase
+	
+	Sub New
+		On Error GoTo ErrH
+		
+		Dim s As New NotesSession
+		If s.Isonserver Then
+			Call serverInitialize()
+		End If
+	
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Sub serverInitialize
+	'Olimpus: Oct 11, 2019
+	'********************************************
+	Private Sub serverInitialize()
+	On Error GoTo ErrH
+
+	Dim s As New NotesSession
+	
+	isOnServ = True
+	
+	Set db = s.Currentdatabase
+	Set agent = s.Currentagent
+	Set requestDoc = db.Getdocumentbyid(agent.Parameterdocid)
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Sub clientInitialize
+	'Olimpus: Oct 11, 2019
+	'********************************************
+	Public Sub clientInitialize(db As NotesDatabase, agent As NotesAgent)
+	On Error GoTo ErrH
+
+	Set Me.agent = agent
+	Set Me.db = db
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Sub finish
+	'Olimpus: Oct 11, 2019
+	'********************************************
+	Sub finish()
+	On Error GoTo ErrH
+	
+	If isOnServer() Then
+		Call requestDoc.Remove(True)
+	Else
+		If Not requestDoc Is Nothing Then
+			Call requestDoc.Save(True, False)	
+		End If
+	End If
+	
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Function setParametr
+	'Boolean
+	'Olimpus: Oct 11, 2019
+	'********************************************
+	Function setParametr (paramName As String, paramValue As String) As Boolean
+	On Error GoTo ErrH
+
+	Call getRequestDoc().Replaceitemvalue(paramName, paramValue)
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function getRequestDoc
+	'NotesDocument
+	'Olimpus: Oct 11, 2019
+	'********************************************
+	Private Function getRequestDoc As NotesDocument
+	On Error GoTo ErrH
+	
+	If Not isOnServ Then
+		If requestDoc Is Nothing Then
+			Set requestDoc = db.Createdocument()		
+			Call requestDoc.replaceItemValue("UNID", requestDoc.Universalid)
+			Call requestDoc.Replaceitemvalue(RAC_AGENT_NAME, agent.Name)
+			Call requestDoc.Replaceitemvalue("form", RAC_TEMPLATE_DOCUMENT_FORM)
+			Call requestDoc.Replaceitemvalue(RAC_EXTERNALDB_SERVER, agent.Servername)
+			Call requestDoc.Replaceitemvalue(RAC_EXTERNALDB_FILEPATH, db.FilePath)
+			Call requestDoc.Replaceitemvalue(RAC_EXTERNALDB_NAME, DBT_getSearchKeyByDb(db))
+			Call requestDoc.Replaceitemvalue(RAC_EXTERNALDB_REPLICAID, db.Replicaid)
+		End If	
+	End If
+	
+	Set getRequestDoc = requestDoc
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Sub setIsOnServer
+	'Olimpus: Oct 11, 2019
+	'********************************************
+	Sub setIsOnServer(flag As Boolean)
+	On Error GoTo ErrH
+
+	isOnServ = flag
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Function isOnServer
+	'Boolean
+	'Olimpus: Oct 11, 2019
+	'********************************************
+	Function isOnServer As Boolean
+	On Error GoTo ErrH
+
+	isOnServer = isOnServ
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+	Set remoteAgentControll = New remoteAgentControll
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+	Resume endH
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:2:Terminate:1:10
+Sub Terminate
+	Call remoteAgentControll.finish()
+End Sub
+
+'++LotusScript Development Environment:2:1:RAC_CreateDocumentForAgent:6:8
+'********************************************
+'Function rac_CreateDocument
+'NotesDocument
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Function RAC_CreateDocumentForAgent (agentName As String) As NotesDocument
+	On Error GoTo ErrH
+
+	Dim s As New notessession
+	Set racDoc = rac_getDb.Createdocument()
+	
+	Call racDoc.replaceItemValue("UNID", racDoc.Universalid)
+	Call racDoc.Replaceitemvalue(RAC_AGENT_NAME, agentName)
+	Call racDoc.Replaceitemvalue("form", RAC_TEMPLATE_DOCUMENT_FORM)
+	Call racDoc.Replaceitemvalue(RAC_EXTERNALDB_SERVER, s.Currentdatabase.Server)
+	Call racDoc.Replaceitemvalue(RAC_EXTERNALDB_FILEPATH, s.Currentdatabase.Filepath)
+	Call racDoc.Replaceitemvalue(RAC_EXTERNALDB_NAME, DBT_getSearchKeyByDb(s.Currentdatabase))
+	Call racDoc.Replaceitemvalue(RAC_EXTERNALDB_REPLICAID, s.Currentdatabase.Replicaid)
+	
+	Set rac_CreateDocumentForAgent = racDoc
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:RAC_runAgentOnServer:6:8
+'********************************************
+'Function RAC_runAgentOnServer
+'NotesAgent
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Function RAC_runAgentOnServer (agentName As String) As NotesAgent
+	On Error GoTo ErrH
+
+	Dim agent As NotesAgent
+	
+	Set agent = rac_getDb.Getagent(agentName)
+	Call agent.RunOnServer()
+	
+	MsgBox  "Запрос отправлен."
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:RAC_GetDB:6:8
+'********************************************
+'Function RAC_GetDB
+'NotesDatabase
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Function RAC_GetDB() As NotesDatabase
+	On Error GoTo ErrH
+
+	If racDb Is Nothing Then Set racDB = DBT_getDbBySearchKey(RAC_REQUESTDB_KEY)
+	Set RAC_getDb = racDb
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:RAC_endProcess:6:8
+'********************************************
+'Function RAC_endProcess
+'Boolean
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Function RAC_endProcess (lucky As Boolean) As Boolean
+	On Error GoTo ErrH
+	
+	If racDoc Is Nothing Then GoTo EndH
+	
+	Call RAC_getRequestDoc().Replaceitemvalue("deleted", "1")
+	If lucky Then
+		Call RAC_getRequestDoc().Replaceitemvalue("Status", "1")
+	Else
+		Call RAC_getRequestDoc().Replaceitemvalue("Status", "2")
+	End If
+
+	Call RAC_getRequestDoc().Save(True, False)
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:RAC_getRequestDoc:6:8
+'********************************************
+'Function RAC_getRequestDoc
+'NotesDocument
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Function RAC_getRequestDoc As NotesDocument
+	On Error GoTo ErrH
+
+	Set RAC_getRequestDoc = racDoc
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:RAC_setComment:6:8
+'********************************************
+'Function RAC_setComment
+'Variant
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Function RAC_setComment (comment As Variant)
+	On Error GoTo ErrH
+
+	Call RAC_getRequestDoc().Replaceitemvalue(RAC_REQUEST_COMMENT_FIELD, comment)
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem  & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:RAC_runAgentOnServerWithDocument:6:8
+'********************************************
+'Function runAgentOnServer
+'NotesAgent
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Function RAC_runAgentOnServerWithDocument() As NotesAgent
+	On Error GoTo ErrH
+
+	
+	Dim agent As NotesAgent
+	Dim extDb As NotesDatabase
+	Dim s As New NotesSession
+	
+	Call RAC_getRequestDoc().save(True, False)
+	
+	Set extDb = DBT_GetDbBySearchKey(RAC_getRequestDoc().Getitemvalue(RAC_EXTERNALDB_NAME)(0))
+	If extDb Is Nothing Then Set extDb = s.Getdatabase(RAC_getRequestDoc().Getitemvalue(RAC_EXTERNALDB_SERVER)(0), RAC_getRequestDoc().Getitemvalue(RAC_EXTERNALDB_FILEPATH)(0))
+	If extDb Is Nothing Then
+		Set extDb = New NotesDatabase("","")
+		Call extDb.Openbyreplicaid(RAC_getRequestDoc().Getitemvalue(RAC_EXTERNALDB_SERVER)(0), RAC_getRequestDoc().Getitemvalue(RAC_EXTERNALDB_REPLICAID)(0))
+	End If
+	Set agent = extDb.Getagent(RAC_getRequestDoc().Getitemvalue(RAC_AGENT_NAME)(0))
+	Call agent.RunOnServer(RAC_getRequestDoc().NoteID)
+	
+	MsgBox  "Запрос отправлен."
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:RAC_getDocumentForAgent:6:8
+'********************************************
+'Function RAC_getDocumentForAgent
+'NotesDocument
+'DCS-Olympiev: Jul 15, 2019
+'********************************************
+Function RAC_getDocumentForAgent (agent As NotesAgent) As NotesDocument
+	On Error GoTo ErrH
+
+	Set racDoc =  RAC_getDb.Getdocumentbyid(agent.Parameterdocid)
+	Set RAC_getDocumentForAgent = racDoc
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+

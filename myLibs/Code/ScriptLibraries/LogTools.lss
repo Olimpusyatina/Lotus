@@ -1,0 +1,448 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library LogTools
+'Olimpus: 12.11.2020
+'********************************************
+Option Public
+Option Declare
+
+UseLSX "*javacon"
+Use "JGrayLogger"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class LogClass
+Declare Private Class Singltoner
+Declare Sub Initialize
+Declare Static Function logger() As LogClass
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {LogTools}
+
+Declare Private Function GetTempPath Lib "kernel32.dll" Alias "GetTempPathA" (ByVal nBufferLength As Long, ByVal lpBuffer As String) As Long
+
+private logClass As logClass
+
+Private Const LOG_EVENT = 		{[LOG]      }
+Private Const ERROR_EVENT = 	{[ERROR]    }
+Private Const FATAL_EVENT = 	{[FATAL]    }
+Private Const WARNING_EVENT = 	{[WARNING]  } 
+Private Const DEBUG_EVENT = 	{[DEBUG]    }
+Private Const START_EVENT = 	{[START]    }
+Private Const STOP_EVENT = 		{[STOP]     }
+
+Private Const GRAYLOG_URL = "ogr-log.ottoruss.ru"'"10.109.161.243"
+Private Const GRAYLOG_PORT = 12206
+
+'********************************************
+'Class LogClass
+'Olimpus: Apr 13, 2021
+'********************************************
+Class LogClass
+	Private debug_mode As Boolean
+	Private isOnServer As Boolean
+	Private sourceName As String
+	Private withStart As Boolean
+	Private js As JAVASESSION
+	Private logClass As JAVACLASS
+	Private logObj As JavaObject
+	Private processID As String
+		
+	Sub New (obj As Singltoner)
+		On Error GoTo ErrH
+
+		obj.iCan
+		Dim s As New NotesSession
+		isOnServer = s.Isonserver
+		Set js = New Javasession
+		Set logClass = js.Getclass("GrayLogger")
+		Set logObj = logClass.Createobject()
+		logObj.setPort GRAYLOG_PORT
+		logObj.setIP GRAYLOG_URL
+		logObj.setId getProcessID
+		logObj.setUserName s.userName
+		
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	
+	Sub Delete
+		On Error GoTo ErrH
+
+		If withStart Then sendLog 0, sourceName, STOP_EVENT
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Sub sendLog
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Private Sub sendLog(errNo As Integer, txt As String, eventType As String) 
+	On Error GoTo ErrH
+	
+		logObj.send errNo, composeLogString(errNo, txt, eventType), eventType
+		writeLog errNo, txt, eventType
+		
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+	'********************************************
+	'Sub writeLog
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Private Sub writeLog(errNo As Integer,txt As String, eventType As String)
+	On Error GoTo ErrH
+	
+		Dim s As New NotesSession	
+		Dim aLog As New NotesLog(s.Currentdatabase.Filepath & "\" & sourceName)
+		Call aLog.OpenNotesLog(s.CurrentDatabase.Server, "alog.nsf")
+		If ErrNo <> 0 Then
+			Call aLog.LogError(errNo, txt)
+		Else
+			Call aLog.Logaction(txt)	
+		End If
+		Set aLog = Nothing
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+	'********************************************
+	'Function composeLogString
+	'Return String
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Private Function composeLogString(errNo As Integer, txt As String, eventType As String) As String
+	On Error GoTo ErrH
+
+		Dim composeLine As String
+	
+		composeLine = {[} & getProcessID()  & {]} & Chr(9) & getFormatedDate() & Chr(9) & eventType & Chr(9)
+		 If errNo <> 0 Then
+		 	composeLine = composeLine & errNo & Chr(9)
+		 End If 
+		composeLine = composeLine & txt
+		composeLogString = composeLine
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function getFormattedDate
+	'Return String
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Private Function getFormatedDate() As String
+	On Error GoTo ErrH
+
+		getFormatedDate = Format(Now, "yyyy-mm-dd hh:nn:ss")
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function getProcessID
+	'String
+	'Olimpus: 24.11.2020
+	'********************************************
+	Private Function getProcessID() As String
+		On Error GoTo ErrH
+
+		If processID = "" Then
+			Dim s As New NotesSession
+			Dim hash As String
+			Dim res As Variant
+			res = Evaluate("@Password(@Text(@UserName) + @Text(@Now) )")
+			hash = StrRight(StrLeft(res(0), ")"), "(")		
+			processID =  hash
+		End If
+		
+		getProcessID = processID
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Sub debug
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Public Sub debug (txt As String)
+	On Error GoTo ErrH
+	
+		If debug_mode Then
+			sendLog 0, Txt, DEBUG_EVENT
+			Print Txt
+		End If
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+
+	'********************************************
+	'Sub Logs
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Public Sub log (txt As String)
+	On Error GoTo ErrH
+
+		sendLog 0, Txt, LOG_EVENT
+		Print Txt
+		
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+	'********************************************
+	'Sub warning
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Public Sub warning(txt As String)
+	On Error GoTo ErrH
+
+		sendLog 0, Txt, WARNING_EVENT
+		Print Txt
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+	
+	'********************************************
+	'Sub Error
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Public Sub Error (errNo As Integer, txt As String)
+	On Error GoTo ErrH
+
+		sendLog errNo, txt, ERROR_EVENT
+		MsgBox txt, 16, "Error"
+		
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+	'********************************************
+	'Sub Fatal
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Public Sub Fatal (errNo As Integer, txt As String)
+	On Error GoTo ErrH
+
+		sendLog errNo, txt, FATAL_EVENT
+		MsgBox txt, 16, "Fatal error"
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+	'********************************************
+	'Sub start
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Public Sub start(sourceName As String)
+	On Error GoTo ErrH
+		
+		If Not withStart Then
+			Me.sourceName = sourceName
+			withStart = True
+			sendLog 0, sourceName, START_EVENT			
+		End If
+		
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+	'********************************************
+	'Sub Stop
+	'Olimpus: Apr 13, 2021
+	'********************************************
+	Public Sub stop()
+	On Error GoTo ErrH
+	
+	If withStart Then
+		sendLog 0, sourceName, STOP_EVENT
+		withStart = False		
+	End If
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Sub
+	
+	'********************************************
+	'Property Set debugMode
+	'Olimpus: 24.11.2020
+	'********************************************
+	Public Property Set debugMode() As Boolean
+	On Error GoTo ErrH
+
+		debug_mode = debugMode
+		If debug_mode Then
+			debug("USING DEBUG MODE. DON'T FORGET TO DISABLE DEBUG MODE ON PRODUCTION SERVERS!")
+		End If
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Property
+	'********************************************
+	'Property Get debugMode
+	'Boolean
+	'Olimpus: 24.11.2020
+	'********************************************
+	Public Property Get debugMode() As Boolean
+	On Error GoTo ErrH
+
+		debugMode = debug_mode
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Property
+	'********************************************
+	'Function isStarted
+	'Return Boolean
+	'Olimpus: Apr 16, 2021
+	'********************************************
+	Function isStarted() As Boolean
+		On Error GoTo ErrH
+
+		isStarted = withStart
+
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+		Resume endH
+EndH:
+	End Function
+End Class
+
+
+'********************************************
+'Class Singltoner
+'Olimpus: 02.11.2020
+'********************************************
+Private Class Singltoner
+	'********************************************
+	'Function iCan
+	'Boolean
+	'Olimpus: 12.11.2020
+	'********************************************
+	Function iCan As Boolean
+	On Error GoTo ErrH
+
+	If CStr(GetThreadInfo(2)) = "00007336" Then iCan = true
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:1:logger:6:8
+'********************************************
+'Function getLog
+'LogClass
+'Olimpus: 12.11.2020
+'********************************************
+Static Function logger() As LogClass
+	On Error GoTo ErrH
+
+	If logClass Is Nothing Then
+		Dim singleton As New Singltoner
+		Set logClass = New logClass(singleton)
+	End If
+	 
+	Set logger = logClass
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

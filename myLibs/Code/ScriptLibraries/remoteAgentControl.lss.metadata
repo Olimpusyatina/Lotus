@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?><note xmlns="http://www.lotus.com/dxl" class="filter" maintenanceversion="1.0" replicaid="432586CD00293F3C" version="11.0">
+<noteinfo noteid="22a" sequence="2" unid="F7714F99B07B5135432586CD0029AD55">
+<created><datetime>20210506T103513,49+03</datetime></created>
+<modified><datetime>20210506T105907,73+03</datetime></modified>
+<revised><datetime>20210506T105907,72+03</datetime></revised>
+<lastaccessed><datetime>20210506T105907,72+03</datetime></lastaccessed>
+<addedtofile><datetime>20210506T103513,64+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
+<wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
+<item name="$TITLE" sign="true"><text>remoteAgentControl</text></item>
+<item name="$Flags"><text>s34Q</text></item>
+<item name="$PublicAccess" sign="true"><text>1</text></item>
+<item name="$DesignerVersion"><text>8.5.3</text></item>
+
+</note>

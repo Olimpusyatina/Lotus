@@ -1,0 +1,544 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	Library ScriptLibrary
+	Created Apr 8, 2019 by Alexandr S. Olympiev/OTTO/RU
+	Description: Comments for Library
+%END REM
+Option Public
+Option Declare
+
+Use "DBSimpleElements"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class ScriptLibrary As Interface
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const DesignElem = {ScriptLibrary}
+Private nLine As String
+
+
+' Library ScriptLibrary -> Class ScripLibrary
+' 
+' DCS-Olympiev Apr 8, 2019
+' *********************************************************************************
+Class ScriptLibrary As Interface
+	Private libDoc As NotesDocument
+	Private libName As String
+	Private version As String
+
+	Private options() As String	
+	Private linkLibs() As String
+	
+	Private constants As ObjectCollection
+	Private declaredFunctions As ObjectCollection
+	Private methods As ObjectCollection
+	Private userClasses As ObjectCollection
+	Private userTypes As ObjectCollection
+	Private variables As ObjectCollection
+	
+	Sub New (doc As notesdocument)
+		On Error GoTo ErrH
+		
+		Set methods = New ObjectCollection
+		Set declaredFunctions = New ObjectCollection
+		Set constants = New ObjectCollection
+		Set userClasses = New ObjectCollection
+		Set userTypes = New ObjectCollection
+		Set variables = New ObjectCollection
+		ReDim linklibs(0)
+		ReDim options(0)
+		
+		Set libDoc = doc
+		libName = doc.Getitemvalue(LIB_NAME)(0)
+		If SL_inString(libName, VERSION_TAG) Then
+			version = StrRight(libName,VERSION_TAG)
+			libName = StrLeft(libName, VERSION_TAG)
+		Else
+			version = LIB_DEFAULT_VERSION
+		End If
+		
+		Dim s As New NotesSession
+		Dim DXLExporter As NotesDXLExporter
+		
+		Set dom = s.Createdomparser()
+		Set DXLExporter = s.Createdxlexporter(libDoc, dom)
+		Call DXLExporter.Process()
+
+		Dim docNode As NotesDOMDocumentNode			
+
+		Set docNode = dom.Document
+		
+		Call parseLibrary(docNode)
+		
+		GoTo Endh
+ErrH:
+		Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Sub
+	' Library ScriptLibrary -> Sub parseLibrary
+	' 
+	' DCS-Olympiev Apr 9, 2019
+	' *********************************************************************************
+	Sub parseLibrary (node As NotesDOMNode)
+		On Error GoTo ErrH
+
+		Dim child As NotesDOMNode
+		Dim elt As NotesDOMNode
+		Dim attrs As NotesDOMNamedNodeMap
+		Dim a As NotesDOMAttributeNode
+		Dim piNode As NotesDOMProcessingInstructionNode
+		
+		If Not node.IsNull Then  
+			Select Case node.NodeType
+			Case DOMNODETYPE_DOCUMENT_NODE:       
+				Set child = node.FirstChild
+				Dim numChildNodes As Integer
+				numChildNodes = node.NumberOfChildNodes				
+				While numChildNodes > 0 
+					Set child = child.NextSibling 
+					numChildNodes = numChildNodes - 1
+					Call parseLibrary(child)
+				Wend
+			Case DOMNODETYPE_TEXT_NODE:           
+				Select Case eventName
+				Case EVENT_OPTIONS
+					Call fillOptions(node.Nodevalue)
+				Case EVENT_DECLARETIONS
+					Call fillDeclarations(node.Nodevalue)
+				Case ""
+				Case else
+					Call fillMethod(eventName, node.Nodevalue)							
+			End Select
+				eventName = ""
+			Case DOMNODETYPE_ELEMENT_NODE:
+				Set elt = node
+				Dim numAttributes As Integer, numChildren As Integer
+				numAttributes = elt.attributes.numberofentries
+				
+				Set attrs = elt.Attributes
+				
+				Dim i As Integer
+				For i = 1 To numAttributes
+					Set a = attrs.GetItem(i)
+					If a.NodeName = EVENT_NODE_NAME Then eventName = a.NodeValue
+				Next
+				
+				numChildren =  elt.NumberOfChildNodes
+				Set child = elt.FirstChild
+				While numChildren > 0
+					Call parseLibrary(child)
+					Set child = child.NextSibling
+					numChildren = numChildren - 1
+				Wend
+		End Select
+		End If
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Sub
+	' Library ScriptLibrary -> Sub fillOptions
+	' 
+	' DCS-Olympiev Apr 9, 2019
+	' *********************************************************************************
+	Private Sub fillOptions(opts As String)
+		On Error GoTo ErrH
+				
+		If (FullTrim(opts)) = "" Then GoTo EndH
+		
+		Dim optionCounter As Integer
+		Dim linkLibsCounter As Integer
+		Dim optionsArr As Variant
+		Dim counter As Integer
+		Dim comment As Boolean
+		
+		optionsArr = Split(SL_clearScript(opts), EOL) 	
+		For counter = 0 To UBound(optionsArr)
+			If SL_inString(optionsArr(counter), TAG_OPTION) Then
+				ReDim Preserve options(optionCounter) As String
+				options(optionCounter) = optionsArr(counter)
+				optionCounter = optionCounter + 1
+			ElseIf optionsArr(counter) <> "" Then
+				ReDim Preserve linkLibs(linkLibsCounter) As String
+				linkLibs(linkLibsCounter) = optionsArr(counter)
+				linkLibsCounter = linkLibsCounter + 1
+			End If			
+		Next
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Sub
+	' Library ScriptLibrary -> Sub fillDeclarations
+	' 
+	' DCS-Olympiev Apr 9, 2019
+	' *********************************************************************************
+	Private Sub fillDeclarations (declaration As String)
+		On Error GoTo ErrH
+		GoTo Endh
+		If (FullTrim(declaration)) = "" Then GoTo EndH
+		
+		Dim decArr As Variant
+		Dim counter As Integer
+		Dim constant As Constant
+		Dim declareFunction As DeclaredFunction
+		Dim variable As Variable
+		Dim userClass As userClass
+		Dim userType As userType
+		Dim blockText As String
+		
+		decArr = Split(SL_clearScript(declaration), EOL)
+		
+		For counter = 0 To UBound(decArr)
+			If SL_inString(decArr(counter), TAG_CONST) Then
+				Set constant = New Constant(decArr(counter))
+				Call constants.addObject(constant) 
+			elseIf SL_inString(decArr(counter), TAG_DECLARE_FUNCTION) Then
+				Set declareFunction = New DeclaredFunction(decArr(Counter))
+				Call declaredFunctions.addObject(declareFunction)
+			ElseIf SL_inString(decArr(counter), TAG_CLASS_START) Then
+				blockText = ""
+				While Not SL_inString(decArr(counter), TAG_CLASS_END) 
+					blockText = blocktext & decArr(counter) & Chr(10)
+					counter = counter + 1
+				Wend
+				blockText = blocktext & decArr(counter)
+				Set userClass = New userClass (blockText)
+				Call userClasses.addObject(userClass)
+			ElseIf SL_inString(decArr(counter),TAG_TYPE_START) Then
+				blockText = ""
+				While Not SL_inString(decArr(counter), TAG_TYPE_END) 
+					blockText = blocktext & decArr(counter) & Chr(10)
+					counter = counter + 1
+				Wend
+				blockText = blocktext & decArr(counter)
+				Set userType = New userType (blockText)
+				Call userTypes.addObject(userType)
+			Else
+				Set variable = New Variable (decArr(counter))
+				Call variables.addObject(variable)
+			End If
+		Next
+		
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & declaration
+EndH:
+	End Sub
+	' Library ScriptLibrary -> Sub fillMethod
+	' 
+	' DCS-Olympiev Apr 9, 2019
+	' *********************************************************************************
+	Private Sub fillMethod (eventName As String, methodText As String)
+		On Error GoTo ErrH
+
+		If (FullTrim(methodText)) = "" Then GoTo EndH
+	
+		Dim meth As New Method (methodText)	
+		Call methods.addObject(meth)
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Sub
+	' Library ScriptLibrary -> Function equals
+	' Boolean
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function equals (obj As Variant) As Boolean
+		On Error GoTo ErrH
+
+		If TypeName(obj) <> TypeName(Me) Then GoTo EndH
+		If obj Is Nothing Then GoTo Endh
+	'	If getName <> obj.getName Then GoTo endh
+	'	If getVersion <> obj.getVersion Then GoTo endh
+		
+		Dim var, oVar
+		Set var = getClasses().getFirstObject()
+		While Not var Is Nothing
+			Set oVar = obj.getClasses.getObjectByKey(var.getKey)
+			If oVar Is Nothing Then GoTo Endh
+			If Not var.equals(oVar) Then GoTo EndH
+			Set var = getClasses().getNextObject()
+		Wend
+		
+		Set var = getConstants().getFirstObject()
+		While Not var Is Nothing
+			Set oVar = obj.getConstants.getObjectByKey(var.getKey)
+			If oVar Is Nothing Then GoTo Endh
+			If Not var.equals(oVar) Then GoTo EndH
+			Set var = getConstants().getNextObject()
+		Wend
+		
+		Set var = getDeclaredFunctions().getFirstObject()
+		While Not var Is Nothing
+			Set oVar = obj.getDeclaredFunctions.getObjectByKey(var.getKey)
+			If oVar Is Nothing Then GoTo Endh
+			If Not var.equals(oVar) Then GoTo EndH
+			Set var = getDeclaredFunctions().getNextObject()
+		Wend
+		
+		Set var = getMethods().getFirstObject()
+		While Not var Is Nothing
+			Set oVar = obj.getMethods.getObjectByKey(var.getKey)
+			If oVar Is Nothing Then GoTo Endh
+			If Not var.equals(oVar) Then GoTo EndH
+			Set var = getMethods().getNextObject()
+		Wend
+		
+		Set var = getTypes().getFirstObject()
+		While Not var Is Nothing
+			Set oVar = obj.getTypes.getObjectByKey(var.getKey)
+			If oVar Is Nothing Then GoTo Endh
+			If Not var.equals(oVar) Then GoTo EndH
+			Set var = getTypes().getNextObject()
+		Wend
+
+		ForAll linklib In getlinkLibs
+			If IsNull(ArrayGetIndex(obj.getLinkLibs(), linklib)) Then GoTo endh
+		End ForAll
+		
+		ForAll opt In GetOptions
+			If IsNull(ArrayGetIndex(obj.GetOptions(), opt)) Then GoTo endh
+		End ForAll
+
+		equals = True
+'
+'		equals = getHash = obj.getHash
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getKey
+	' String
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getKey As String
+		On Error GoTo ErrH
+
+		getKey = "ScriptLibrary " & getName
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getName
+	' String
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getName As String
+		On Error GoTo ErrH
+
+		getName = libName
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getConstants
+	' Objectcollection
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getConstants As ObjectCollection
+		On Error GoTo ErrH
+
+		Set getConstants = constants
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getDeclaredFunctions
+	' Objectcollection
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getDeclaredFunctions As ObjectCollection
+		On Error GoTo ErrH
+
+		Set getDeclaredFunctions = declaredFunctions
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getLinkLibs
+	' Variant
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getLinkLibs As Variant
+		On Error GoTo ErrH
+
+		getlinkLibs = linkLibs
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getMethods
+	' Objectcollection
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getMethods As ObjectCollection
+		On Error GoTo ErrH
+
+		Set getMethods = methods
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getOptions
+	' Variant
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getOptions As Variant
+		On Error GoTo ErrH
+
+		getOptions = options
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function getVariables
+	'Objectcollection
+	'DCS-Olympiev: May 28, 2019
+	'********************************************
+	Function getVariables As ObjectCollection
+	On Error GoTo ErrH
+
+	Set getVariables = variables
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getClasses
+	' Objectcollection
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getClasses As ObjectCollection
+		On Error GoTo ErrH
+
+		Set getClasses = userClasses
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getTypes
+	' Objectcollection
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getTypes As ObjectCollection
+		On Error GoTo ErrH
+		
+		Set getTypes = userTypes
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getVersion
+	' String
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getVersion As String
+		On Error GoTo ErrH
+
+		getVersion = version
+
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+	End Function
+	' Library ScriptLibrary -> Function getHash
+	' String
+	' DCS-Olympiev Apr 11, 2019
+	' *********************************************************************************
+	Function getHash As String
+		On Error GoTo ErrH
+
+		Dim stringToHash As String
+		
+		Dim var As Variable
+		stringToHash = TypeName(Me) & getKey & getName & getVersion
+		
+		Set var = getConstants().getFirstObject()
+		While Not var Is Nothing 
+			stringToHash = stringToHash & var.getHash()
+			Set var = getConstants().getNextObject()
+		Wend
+		
+		Set var = getDeclaredFunctions().getFirstObject()
+		While Not var Is Nothing 
+			stringToHash = stringToHash & var.getHash()
+			Set var = getDeclaredFunctions().getNextObject()
+		Wend
+
+		Set var = getMethods().getFirstObject()
+		While Not var Is Nothing 
+			stringToHash = stringToHash & var.getHash()
+			Set var = getMethods().getNextObject()
+		Wend
+		
+		Set var = getClasses().getFirstObject()
+		While Not var Is Nothing 
+			stringToHash = stringToHash & var.getHash()
+			Set var = getClasses().getNextObject()
+		Wend
+		
+		Set var = getTypes().getFirstObject()
+		While Not var Is Nothing 
+			stringToHash = stringToHash & var.getHash()
+			Set var = getTypes().getNextObject()
+		Wend
+		
+		ForAll opt In getOptions
+			stringToHash = stringToHash & opt
+		End ForAll
+		
+		ForAll ll In getLinkLibs
+			stringToHash = stringToHash & ll
+		End ForAll
+		
+		getHash = SL_getHash(stringToHash)
+		
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	
+	EOL = Chr(10)
+	nLine = EOL & Chr(13)
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+End Sub
+
+

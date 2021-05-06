@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?><note xmlns="http://www.lotus.com/dxl" class="filter" maintenanceversion="1.0" replicaid="432586CD00293F3C" version="11.0">
+<noteinfo noteid="1e6" sequence="2" unid="2DB3AE720F3B4DAF432586CD00299F4D">
+<created><datetime>20210506T103437,57+03</datetime></created>
+<modified><datetime>20210506T105905,23+03</datetime></modified>
+<revised><datetime>20210506T105905,22+03</datetime></revised>
+<lastaccessed><datetime>20210506T105905,22+03</datetime></lastaccessed>
+<addedtofile><datetime>20210506T103437,75+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
+<wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
+<item name="$Flags"><text>s34Q</text></item>
+<item name="$PublicAccess" sign="true"><text>1</text></item>
+<item name="$TITLE" sign="true"><text>LogTools</text></item>
+<item name="$DesignerVersion" sign="true"><text>8.5.3</text></item>
+<item name="$Comment"><text>Логи лотуса</text></item>
+
+</note>

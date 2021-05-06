@@ -1,0 +1,103 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library LS2JOpenCSV
+'Olimpus: 09.11.2020
+'********************************************
+Option Public
+Option Declare
+
+UseLSX "*javacon"
+Use "OpenCSV"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class OpenCSV
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {LS2JOpenCSV}
+'********************************************
+'Class OpenCSV
+'Olimpus: 09.11.2020
+'********************************************
+Class OpenCSV
+	private js As JAVASESSION
+	private csvClass As JAVACLASS
+	private csv As JavaObject
+	
+	Sub New(fileName As STring)
+		On Error GoTo ErrH
+		
+		Set js = New Javasession
+		Set csvClass = js.Getclass("LSCSVWriter")
+		
+		Set csv = csvClass.Createobject()
+		Call csv.setFileName(fileName)
+		
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Function writeNext
+	'Boolean
+	'Olimpus: 09.11.2020
+	'********************************************
+	Function writeNext(str2 As String) As Boolean
+	On Error GoTo ErrH
+
+'	Dim strArr() As String
+'	Dim i As Integer
+'	Dim str1 As Variant
+'	str1 = Split(str2, "~")
+'	i = UBound(str1)
+'	ReDim strArr(i) As String
+'	
+'		For i = 0 To UBound(str1)
+'			strArr(i) = Str1(i)
+'		Next
+	
+		Call csv.write(str2)
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function finish
+	'String
+	'Olimpus: 09.11.2020
+	'********************************************
+	Function finish() As String
+	On Error GoTo ErrH
+
+	finish = csv.finish()	
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+

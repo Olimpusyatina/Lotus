@@ -1,0 +1,55 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library ActiveDirectoryInterface
+'Olimpus: Oct 1, 2019
+'********************************************
+Option Public
+Option Declare
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class ActiveDirectory
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {ActiveDirectoryInterface}
+
+Private Const AD_USER_NAME = "msk\\Max_Sync_AD"
+Private Const AD_USER_PASSWORD = "qw3{dYX4"
+'********************************************
+'Class ActiveDirectory
+'Olimpus: Oct 1, 2019
+'********************************************
+Class ActiveDirectory
+	Private adObject As Variant 
+	Private adConnection As Variant
+	
+	Sub New
+		On Error GoTo ErrH
+		
+		Set adConnection = CreateObject("ADODB.Connection")
+		Call adConnection.Open ("Provider=ADsDSOObject;")
+		
+		
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?><note xmlns="http://www.lotus.com/dxl" class="filter" maintenanceversion="1.0" replicaid="432586CD00293F3C" version="11.0">
+<noteinfo noteid="2e6" sequence="2" unid="8205A71D59526B0A432586CD002A845B">
+<created><datetime>20210506T104423,95+03</datetime></created>
+<modified><datetime>20210506T105903,92+03</datetime></modified>
+<revised><datetime>20210506T105903,91+03</datetime></revised>
+<lastaccessed><datetime>20210506T105903,91+03</datetime></lastaccessed>
+<addedtofile><datetime>20210506T104423,97+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
+<wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
+<item name="$Flags"><text>s34Q</text></item>
+<item name="$PublicAccess" sign="true"><text>1</text></item>
+<item name="$TITLE" sign="true"><text>ArrayTools</text></item>
+<item name="$DesignerVersion" sign="true"><text>8.5.3</text></item>
+<item name="$POID"><datetime>20140527T181849,05+04</datetime></item>
+
+</note>

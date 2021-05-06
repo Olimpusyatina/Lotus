@@ -1,0 +1,94 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library DBConstants
+'Olimpus: Sep 6, 2019
+'********************************************
+Option Public
+Option Declare
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {DBConstants}
+
+Public Const VERSION_TAG = {|v.}
+
+Public Const LIB_NAME = "$TITLE"
+Public Const LIB_DEFAULT_VERSION = "v1.0.0.0"
+
+Public Const ELEMENT_NAME = "$TITLE"
+
+Public Const EVENT_NODE_NAME = "event"
+Public Const EVENT_OPTIONS = "options"
+Public Const EVENT_DECLARETIONS = "declarations"
+
+Public Const PRIVATE_MODIFIER = "Private"
+Public Const PUBLIC_MODIFIER = "Public"
+Public Const STATIC_MODIFIER = "Static"
+Public Const DIM_MODIFIER = "Dim"
+Public Const BYVAL_MODIFIER = "ByVal"
+
+Public Const SUB_METHOD = "Sub "
+Public Const FUNCTION_METHOD = "Function "
+Public Const PROPERTYGET_METHOD = "Property get"
+Public Const PROPERTYSET_METHOD = "Property set"
+Public Const PROPERTY_METHOD = "Property"
+
+Public Const TAG_CONST = "Const "
+Public Const TAG_DECLARE_FUNCTION = "Declare "
+Public Const TAG_DECLARE_LIB = "lib"
+Public Const TAG_DECLARE_ALIAS = "alias"
+Public Const TAG_CLASS_START = "Class "
+Public Const TAG_CLASS_END = "End Class"
+Public Const TAG_TYPE_START = "Type "
+Public Const TAG_TYPE_END = "End Type"
+Public Const TAG_SUB_START = "Sub "
+Public Const TAG_SUB_END = "End Sub"
+Public Const TAG_FUNCTION_START = "Function "
+Public Const TAG_FUNCTION_END = "End Function"
+Public Const TAG_PROPERTYSET_START = "Property set "
+Public Const TAG_PROPERTYSET_END = "End property"
+Public Const TAG_PROPERTYGET_START = "Property get "
+Public Const TAG_PROPERTYGET_END = "End property"
+Public Const TAG_OPTION = "Option "
+Public Const TAG_END = "end"
+
+Public Const CONSTANT_VALUE_DELEMITER = "="
+Public Const CONSTANT_TYPE_NUMERIC = "Numeric"
+Public Const CONSTANT_TYPE_STRING = "String"
+
+Public Const VARIABLE_AS_TAG = " As "
+Public Const VARIABLE_DEFAULT_TYPE = "As Variant"
+
+Public Const ARGUMENT_DELEMITER = ","
+Public Const NOT_NEWLINE_DELEMITER = "_"
+
+Public Const COMMENT_SINGLE = {'}
+Public Const COMMENT_START_REM = {%Rem}
+Public Const COMMENT_END_REM = {%End Rem}
+
+Public dom As NotesDOMParser
+Public eventName As String
+Public EOL As String
+
+Public Const PROGRAMM_LANGUAGE_LOTUSSCRIPT = "lotusscript"
+Public Const PROGRAMM_LANGUAGE_JAVA = "java"
+Public Const PROGRAMM_LANGUAGE_JAVASCRIPT = "javascript"
+Public Const PROGRAMM_LANGUAGE_FORMULAS = "formula"
+
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub

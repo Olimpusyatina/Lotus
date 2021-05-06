@@ -1,0 +1,338 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library Release_UI
+'Olimpus: Jan 16, 2021
+'********************************************
+
+Option Public
+Option Declare
+Use "Release"
+Use "DataBaseTools_UI"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class ReleaseUI
+Declare Sub Initialize
+Declare Function release() As Boolean
+Declare Function selectDb (fldPref As String) As Boolean
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+
+Private nLine As String
+Private Const designElem = {Release_UI}
+
+Const DEVELOPMENT_SERVER = "T-APP1-MSK/OTTO/RU"
+Const PRODUCTION_SERVER = "MSK-LotusTask/OTTO/RU"
+'********************************************
+'Class ReleaseUI
+'Olimpus: Apr 15, 2021
+'Description: Comments for Class
+'********************************************
+Class ReleaseUI
+	Private release_ex As Release
+	
+	Sub New (uidoc As notesUIdocument)
+		On Error GoTo ErrH
+
+		Set release_ex = New Release(uidoc.Document)
+		
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+		Resume endH
+EndH:
+	End Sub
+	'********************************************
+	'Function chooseDevDb
+	'Return Boolean
+	'Olimpus: Apr 15, 2021
+	'********************************************
+	Function chooseDevDb() As Boolean
+	On Error GoTo ErrH
+
+	
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function chooseProdDb
+	'Return Boolean
+	'Olimpus: Apr 15, 2021
+	'********************************************
+	Function chooseProdDb() As Boolean
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function chooseForms
+	'Return Boolean
+	'Olimpus: Apr 15, 2021
+	'********************************************
+	Function chooseForms() As Boolean
+	On Error GoTo ErrH
+
+		Dim forms As Variant
+		Dim ws As New NotesUIWorkspace
+		
+		forms = release_ex.getDevDb.Forms
+		Dim formNames() As String
+		Dim i As Integer
+		ForAll form In forms
+			ReDim Preserve formNames(i) As String
+			formNames(i) = form.Name
+			i = i + 1
+		End ForAll 
+		
+		Dim res As Variant
+		res = ws.Prompt(7, "Выберте представления", "Выбор", "", formNames)
+		
+		If IsEmpty(res) Then GoTo EndH
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function chooseViews
+	'Return Boolean
+	'Olimpus: Apr 15, 2021
+	'********************************************
+	Function chooseViews() As Boolean
+	On Error GoTo ErrH
+
+			Dim views As Variant
+			Dim ws As New NotesUIWorkspace
+			
+			views = release_ex.getDevDb.Views
+			Dim viewNames() As String
+			Dim i As integer
+			ForAll view In views
+				ReDim Preserve viewNames(i) As String
+				viewNames(i) = view.Name
+				i = i + 1
+			End ForAll 
+			
+			Dim res As Variant
+			res = ws.Prompt(7, "Выберте представления", "Выбор", "", viewNames)
+			
+			If IsEmpty(res) Then GoTo EndH
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function chooseAgents
+	'Return Boolean
+	'Olimpus: Apr 15, 2021
+	'********************************************
+	Function chooseAgents() As Boolean
+	On Error GoTo ErrH
+
+		Dim agents As Variant
+		Dim ws As New NotesUIWorkspace
+		
+		agents = release_ex.getDevDb.Agents
+		Dim agentNames() As String
+		Dim i As Integer
+		ForAll agent In agents
+			ReDim Preserve agentNames(i) As String
+			agentNames(i) = agent.Name
+			i = i + 1
+		End ForAll 
+		
+		Dim res As Variant
+		res = ws.Prompt(7, "Выберте представления", "Выбор", "", agentNames)
+		
+		If IsEmpty(res) Then GoTo EndH
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function chooseLibs
+	'Return Boolean
+	'Olimpus: Apr 15, 2021
+	'********************************************
+	Function chooseLibs() As Boolean
+	On Error GoTo ErrH
+
+		Dim libs As Variant
+		Dim ws As New NotesUIWorkspace
+		
+		
+		Dim libNames() As String
+		Dim i As Integer
+		ForAll libr In libs
+			ReDim Preserve libNames(i) As String
+			libNames(i) = libr.Name
+			i = i + 1
+		End ForAll 
+		
+		Dim res As Variant
+		res = ws.Prompt(7, "Выберте представления", "Выбор", "", libNames)
+		
+		If IsEmpty(res) Then GoTo EndH
+
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function release
+	'Return Boolean
+	'Olimpus: Apr 15, 2021
+	'********************************************
+	Function release() As Boolean
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:1:release:6:8
+'********************************************
+'Function release
+'Return Boolean
+'Olimpus: Jan 16, 2021
+'********************************************
+Function release() As Boolean
+	On Error GoTo ErrH
+
+	Dim ws As New NotesUIWorkspace
+	
+	Dim doc As NotesDocument
+	
+	ws.Dialogbox "release", True, True, True, True, False, False, "Релиз", doc, True, False, True
+	
+'	Dim devDb As NotesDatabase
+'	Dim prodDb As NotesDatabase
+'	
+'	Dim ws As New NotesUIWorkspace
+'		
+'	Set devDb = DBTUI_ChooseDb(True)
+'	Dim s As New NotesSession
+'	
+'	Set devDb = DBT_GetDbOnServer(DEVELOPMENT_SERVER, devDb)
+'	Set prodDb = DBT_GetDbOnServer(PRODUCTION_SERVER, devDb)
+'	
+'	Dim devView As NotesView
+'	Dim prodView As NotesView
+'	
+'	Dim views As Variant
+'	
+'	views = devDb.Views
+'	Dim viewNames() As String
+'	Dim i As integer
+'	ForAll view In views
+'		ReDim Preserve viewNames(i) As String
+'		viewNames(i) = view.Name
+'		i = i + 1
+'	End ForAll 
+'	
+'	Dim res As Variant
+'	res = ws.Prompt(7, "Выберте представления", "Выбор", "", viewNames)
+'	
+'	If IsEmpty(res) Then GoTo EndH
+'	 
+'	ForAll vName In res 
+'		Set devView = devDb.Getview(vName)
+'		Set prodView = prodDb.Getview(vName)
+'
+'		While prodView.Columncount > 0 
+'			Call prodView.Removecolumn()	
+'		Wend
+'		
+'		prodView.Selectionformula = devView.Selectionformula
+'		
+'		Dim columns As Variant
+'		Dim column As NotesViewColumn
+'		columns = devView.Columns
+'		ForAll col In columns
+'			Set column = col
+'			Call prodView.Copycolumn(column)
+'		End ForAll
+'		
+'		print "Released " & devView.Name	
+'	End ForAll
+'	
+'	MsgBox "Done!" 
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+
+
+'++LotusScript Development Environment:2:1:selectDb:6:8
+'********************************************
+'Function selectDb
+'Return Boolean
+'Olimpus: Jan 18, 2021
+'********************************************
+Function selectDb (fldPref As String) As Boolean
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem  & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function

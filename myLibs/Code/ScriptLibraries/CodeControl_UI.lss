@@ -1,0 +1,259 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	Library CodeControl_UI
+	Created Apr 2, 2019 by Alexandr S. Olympiev/OTTO/RU
+	Description: Comments for Library
+%END REM
+Option Public
+Option Declare
+Use "CodeControl"
+Use "DataBaseTools_UI"
+Use "OutputLib"
+Use "Comparator"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class LibControlUI As Interface
+Declare Sub Initialize
+Declare Function CCUI_compareLibs() As Boolean
+Declare Function CCUI_Push() As Boolean
+Declare Function CCUI_addAllScriptLibraries() As Boolean
+Declare Function CCUI_addScriptLibrary() As Boolean
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const DesignElem = {CodeControl_UI}
+Private nLine As String
+
+'********************************************
+'Class LibControlUI
+'Olimpus: Apr 28, 2021
+'Description: Comments for Class
+'********************************************
+
+Class LibControlUI As Interface
+	Private docUI_ex As NotesUIDocument
+	Private libControl As LibControl
+	
+	Sub New (uiDoc As NotesUIDocument)
+		On Error GoTo ErrH
+
+		Set docUI_ex = uiDoc
+		Set libControl = New LibControl (uiDoc.Document)
+		
+		GoTo EndH
+ErrH:
+		stop
+		logger.error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+		Resume endH
+EndH:
+	End Sub
+	'********************************************
+	'Function querySave
+	'Return Boolean
+	'Olimpus: Apr 28, 2021
+	'********************************************
+	Function querySave() As Boolean
+	On Error GoTo ErrH
+
+	
+
+	GoTo EndH
+ErrH:
+	stop
+	logger.error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:1:CCUI_compareLibs:6:8
+'********************************************
+'Function CCUI_compareLibs
+'Return Boolean
+'Olimpus: Apr 16, 2021
+'********************************************
+Function CCUI_compareLibs() As Boolean
+	On Error GoTo ErrH
+
+	Dim dc As NotesDocumentCollection
+	Dim s As New NotesSession
+	
+	Set dc = s.Currentdatabase.Unprocesseddocuments
+	Dim lib1 As ScriptLibrary
+	Dim lib2 As ScriptLibrary
+	Dim lDoc1 As NotesDocument
+	Dim lDoc2 As NotesDocument
+	
+	Set lDoc1 = s.Resolve(dc.Getfirstdocument().Getitemvalue("url")(0))
+	Set lib1 =  New ScriptLibrary(lDOc1)
+	Set lDoc2 = s.Resolve(dc.Getlastdocument().Getitemvalue("url")(0))
+	Set lib2 =  New ScriptLibrary(lDoc2)
+	
+	Dim comparator As New Comparator
+	
+	comparator.run lib1, lib2
+	
+	MsgBoxTxt comparator.getResultString()
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:CCUI_Push:6:8
+'********************************************
+'Function CCUI_Push
+'Return Boolean
+'Olimpus: Apr 16, 2021
+'********************************************
+Function CCUI_Push() As Boolean
+	On Error GoTo ErrH
+
+	Dim dc As NotesDocumentCollection
+	Dim s As New NotesSession
+	Dim mLib As NotesDocument
+	Dim mLibDoc As NotesDocument
+	
+	Set dc = s.Currentdatabase.Unprocesseddocuments
+	Dim dbDes As Win32DatabaseDesign
+	Dim libs As Variant
+	Dim db As NotesDatabase
+	Set db = DBTUI_ChooseDb(True)
+	
+	Set mLibDoc = dc.Getfirstdocument()
+	While Not mLibDoc Is Nothing
+		Set mLib = s.Resolve(mLibDoc.Getitemvalue("url")(0))
+		Set dbDes = New Win32DatabaseDesign(db)
+		libs = dbDes.scriptLibraryDocuments
+		Dim sLib As NotesDocument
+		ForAll lb In libs 
+			If mLibDoc.getItemValue("TITLE")(0) = lb.getitemvalue("$TITLE")(0) Then
+				Set sLib = lb
+				Exit ForAll
+			End If
+		End ForAll
+		If Not sLib Is Nothing Then
+			sLib.Remove(True)
+		End If
+		Set sLib = mLib.Copytodatabase(db)
+		CC_createLibDocWithVar slib, mLibDoc.Getitemvalue("Variant")(0)
+		Set mLibDoc = dc.Getnextdocument(mLibDoc)
+	Wend
+	
+	CCUI_Push = CC_RecompileDB(Db)
+
+	
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:CCUI_addAllScriptLibraries:6:8
+'********************************************
+'Function CCUI_addAllScriptLibraries
+'Return Boolean
+'Olimpus: Apr 16, 2021
+'********************************************
+Function CCUI_addAllScriptLibraries() As Boolean
+	On Error GoTo ErrH
+
+	Dim db As NotesDatabase
+	Dim s As New NotesSession
+
+	Set db = DBTUI_ChooseDb(True)
+
+	Dim libs As Variant
+	Dim libDoc As NotesDocument
+	Dim dbDes As New Win32DatabaseDesign(db)
+	libs = dbDes.scriptLibraryDocuments
+
+	If IsArray(libs) Then
+		ForAll lb In libs 
+			Set libDoc = lb
+			CC_createLibDoc(libDoc).Save True, False
+		End ForAll
+	End If
+
+	CCUI_addAllScriptLibraries = True
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:CCUI_addScriptLibrary:6:8
+'********************************************
+'Function CCUI_addScriptLibrary
+'Return Boolean
+'Olimpus: Apr 16, 2021
+'********************************************
+Function CCUI_addScriptLibrary() As Boolean
+	On Error GoTo ErrH
+
+	Dim db As NotesDatabase
+	Dim s As New NotesSession
+
+	Set db = DBTUI_ChooseDb(True)
+
+	Dim libs As Variant
+	Dim sLib As NotesDocument
+	Dim i As Integer
+	Dim libNames() As String
+	Dim res As Variant
+	Dim ws As New NotesUIWorkspace
+	Dim dbDes As New Win32DatabaseDesign(db)
+	libs = dbDes.scriptLibraryDocuments
+
+	If IsArray(libs) Then
+		ForAll lb In libs 
+			ReDim Preserve libNames(i) As String
+			libNames (i) = lb.Getitemvalue("$TITLE")(0)
+			i = i +1
+		End ForAll
+	End If
+	Call ArraySort(1,libNames)
+	res =  ws.Prompt(PROMPT_OKCANCELLIST,"Libraries" , "Choose",libNames(0),libNames)
+
+	ForAll lb In libs 
+		If res = lb.getitemvalue("$TITLE")(0) Then
+			Set sLib = lb
+			Exit ForAll
+		End If
+	End ForAll
+
+	if CC_createLibDoc(slib).save(True,False) Then
+		ws.Viewrefresh
+	End If
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+

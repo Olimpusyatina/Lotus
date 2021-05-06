@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?><note xmlns="http://www.lotus.com/dxl" class="filter" maintenanceversion="1.0" replicaid="432586CD00293F3C" version="11.0">
+<noteinfo noteid="192" sequence="2" unid="C6703904F31CD751432586CD00297082">
+<created><datetime>20210506T103237,78+03</datetime></created>
+<modified><datetime>20210506T105904,36+03</datetime></modified>
+<revised><datetime>20210506T105904,35+03</datetime></revised>
+<lastaccessed><datetime>20210506T105904,35+03</datetime></lastaccessed>
+<addedtofile><datetime>20210506T103237,94+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
+<wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
+<item name="$TITLE" sign="true"><text>DBDesigner</text></item>
+<item name="$PublicAccess" sign="true"><text>1</text></item>
+<item name="$DesignerVersion" sign="true"><text>8.5.3</text></item>
+<item name="$POID"><datetime>20140131T173149,24+04</datetime></item>
+<item name="$Flags"><text>s34Q</text></item>
+
+</note>

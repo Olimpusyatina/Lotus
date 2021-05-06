@@ -1,0 +1,344 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library LS2JImapConnector
+'Olimpus: 11.12.2020
+'********************************************
+Option Public
+Option Declare
+
+Uselsx "*javacon"
+Use "ImapConnector"
+Use "JIMAPConnector"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class IMAPConnector As ImapConnectorInterface
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {LS2JImapConnector}
+'********************************************
+'Class IMAPConnector
+'Olimpus: 11.12.2020
+'********************************************
+Class IMAPConnector As ImapConnectorInterface
+	Private doc_ex As notesDocument
+	Private imapObject As JavaObject
+	Private jError As JavaError
+	Private jSession As Javasession
+	Private lotusMail As NotesDatabase
+	
+	
+	Sub New (doc As notesdocument)
+		On Error GoTo ErrH
+	
+		Set doc_ex = doc
+		Dim jClass As JavaClass
+		Set jSession = New Javasession
+		Set jClass = jSession.Getclass("IMAPConnector")
+		Set imapObject = jClass.Createobject()
+			
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Function getKey
+	'String
+	'Olimpus: 11.12.2020
+	'********************************************
+	Function getKey() As String
+	On Error GoTo ErrH
+
+	getKey = doc_ex.Universalid	
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Property Set header
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function header As String
+		On Error GoTo ErrH
+
+		header_ex = doc_ex.Getitemvalue("header")(0)	
+		imapObject.setHeader(header_ex)	
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End function
+	'********************************************
+	'Property Set folder
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function folder As String
+		On Error GoTo ErrH
+
+		folder_ex = doc_ex.Getitemvalue("folder")(0)		
+		imapObject.setFolder(folder_ex)	
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Property Set imapFolder
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function imapFolder As String
+		On Error GoTo ErrH
+
+		imapFolder_ex = doc_ex.Getitemvalue("imapFolder")(0)	
+		imapObject.setImapFolder(imapFolder_ex)	
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Property Set filePath
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function filePath As String
+		On Error GoTo ErrH
+
+		filePath_ex = doc_ex.Getitemvalue("filePath")(0)		
+		imapObject.setFilePath(filePath_ex)
+			
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Property Set server
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function server As String
+		On Error GoTo ErrH
+
+		server_ex = doc_ex.Getitemvalue("server")(0)		
+		imapObject.setServer(server_ex)	
+		
+		GoTo EndH
+ErrH:
+		Stop
+'		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+		Set jError = jSession.getLastJavaError
+		'		Print "Java error: " jError.ErrorMsg ' empty String
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & jError.ErrorMsg  & Err
+EndH:
+	End Function
+	'********************************************
+	'Property Get imapPassword
+	'String
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function imapPassword As String
+		On Error GoTo ErrH
+
+		imapPassword = doc_ex.Getitemvalue("imapPassword")(0)
+		imapObject.setImapPassword(imapPassword)	
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+
+	'********************************************
+	'Property Set imapEmail
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function imapEmail As String
+		On Error GoTo ErrH
+
+		imapEmail_ex = doc_ex.Getitemvalue("imapEmail")(0)	
+		imapObject.setImapEmail(imapEmail_ex)	
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Property Set imapServer
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function imapServer As String
+		On Error GoTo ErrH
+
+		imapServer_ex = doc_ex.Getitemvalue("imapServer")(0)
+		imapObject.setImapServer(imapServer_ex)		
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Property Set imapPort
+	'Olimpus: 10.12.2020
+	'********************************************
+	Function imapPort As String
+		On Error GoTo ErrH
+
+		imapPort = doc_ex.Getitemvalue("imapPort")(0)	
+		imapObject.setImapPort(imapPort)	
+		
+		GoTo EndH
+ErrH:
+		Stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function getFolders
+	'Variant
+	'Olimpus: 11.12.2020
+	'********************************************
+	Function getImapFolders As Variant
+	On Error GoTo ErrH
+	
+	
+	imapServer 
+	imapPort
+	imapEmail
+	imapPassword
+	imapObject.connect
+
+	getImapFolders = imapObject.getFolders()
+	
+
+	
+	GoTo EndH
+ErrH:
+	Stop
+'	Set jError = jSession.getLastJavaError
+'		Print "Java error: " jError.ErrorMsg ' empty String
+'		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & jError.ErrorMsg  & Err
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function setFolders
+	'Boolean
+	'Olimpus: 14.12.2020
+	'********************************************
+	Function setImapFolders(folders As Variant) As Boolean
+	On Error GoTo ErrH
+
+	doc_ex.Replaceitemvalue "imapFolder", folders
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function getFolders
+	'Variant
+	'Olimpus: 14.12.2020
+	'********************************************
+	Function getFolders() As Variant
+	On Error GoTo ErrH
+
+		If lotusMail Is Nothing Then getLotusDb
+		Dim views As Variant
+		views = lotusMail.Views
+		Dim folders() As String
+		Dim i As Integer
+			
+		ForAll view In views
+			If view.isFolder Then
+				ReDim Preserve folders(i) As String
+				folders(i) = view.Name
+				i = i + 1
+			End If
+		End ForAll
+		getFolders = folders
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function getLotusDb
+	'NotesDatabase
+	'Olimpus: 14.12.2020
+	'********************************************
+	Function getLotusDb As NotesDatabase
+	On Error GoTo ErrH
+
+		server_ex = doc_ex.Getitemvalue("server")(0)
+		filePath_ex = doc_ex.Getitemvalue("filePath")(0)
+		If server_ex = "" Then Error 9331, "Не указан сервер"
+		If filePath_ex = "" Then Error 9332, "Не указан путь к БД"
+
+		Dim s As New NotesSession
+		Set lotusMail = s.Getdatabase(server_ex, filePath_ex)
+	
+		Set getLotusDb = lotusMail
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function setFolders
+	'Boolean
+	'Olimpus: 14.12.2020
+	'********************************************
+	Function setFolders (folders As Variant) As Boolean
+	On Error GoTo ErrH
+
+	doc_ex.Replaceitemvalue "folder", folders
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+
+
+
+

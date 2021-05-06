@@ -1,0 +1,1043 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+Option Public
+Option Declare
+Use "DataBaseTools"
+Use "ArrayTools"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Sub Initialize
+Declare Function VD_CreateRequest(TypeReq As String, MainDoc As NotesDocument) As NotesDocument
+Declare Function VD_GetUserFuncRole(param As NotesDocument, UserName As String) As String
+Declare Function VD_RunAgent(AgentName As String, Param As NotesDocument) As Boolean
+Declare Sub VD_SetNewParent4Pay(Request As NotesDocument,ParentDoc As NotesDocument)
+Declare Function VD_GetWhatChangeList(param As NotesDocument) As Variant
+Declare Function VD_GetMainDoc(param As variant) As NotesDocument
+Declare Function VD_GetVendorArchDb() As NotesDatabase
+Declare Sub VD_SetWhatChangeList(param As NotesDocument)
+Declare Function VD_GetVendorByINNVAT(INNVAT As String) As NotesDocumentCollection
+Declare Sub VD_UpdateOrCreateEssentialElement(EssentialElement As NotesDocument)
+Declare Function VD_GetAllRequestByMainDocUNID(sUNID As String, Types As String) As NotesDocumentCollection
+Declare Function VD_GetSetting(SettingName As String) As NotesDocument
+Declare Function VD_GetVendorDb() As NotesDatabase
+Declare Function VD_GetVendorByName(VendorName As String, ApproveOnly As boolean) As NotesDocument
+Declare Function VD_NeedReAgreement(param As NotesDocument) As Boolean
+Declare Sub VD_MoveVendorToStatus(param As NotesDocument, NewStatus As String, OnServer As Boolean)
+Declare Sub VD_SetVendorDb(db As NotesDatabase)
+Declare Function VD_GetVendorByUNID(UNID As String) As NotesDocument
+Declare Function VD_NeedNalogContol(param As NotesDocument) As Boolean
+Declare Sub VD_RollBackRequest(param As NotesDocument)
+Declare Function VD_MoveRequestToStatus(param As NotesDocument, CurrentStatusCode As String, Username As String) As Boolean
+Declare Sub VD_InitVendorLib()
+Declare Sub VD_CopyAgreementFields(param As NotesDocument, MainDoc As NotesDocument)
+Declare Function VD_CheckINNValue(INN As String) As Boolean
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const libName = {("Vendor")}
+Private Const VENDOR_DBPATH = {Esc\Vendor.nsf}
+Private Const VENDOR_DBKEY = {VENDOR}
+Private Const VENDOR_ARCHIVE_DBKEY = {VENDOR_ARCHIVE}
+Private Const VENDOR_INNVAT_VIEWNAME = {ByINNVAT}
+Private Const VENDOR_REQUESTBYMDU_VIEWNAME = {RequestByMainDocUNID}
+Private Const VENDOR_BYUNID_VIEWNAME = {ByUNID}
+
+Const VENDOR_REFBYKEY_VIEWNAME = {ReferenceByRefKey}
+Const VENDOR_CATEGORY_VIEWNAME = {ReferenceCategory}
+Const VENDOR_ORGFORM_VIEWNAME = {ReferenceOrgForm}
+Const VENDOR_BYNAME_VIEWNAME = {VendorByName}
+Const VENDOR_APPROVE4MAIL_VIEWNAME = {ApproveByAuthor}
+Const VENDOR_APPROVE_VIEWNAME = {Approve}
+Const VENDOR_INTERNAL_VIEWNAMR = {Internal}
+Const VENDOR_REQUESTPROCESSING_VIEWNAME = {ReadyForProcessing}
+Const VENDOR_SETTINGS = {Settings}
+Const VENDOR_ACCOUNDDIALOG_FORMNAME = {BankAccountTableDlg}
+Const VENDOR_ACCOUNDLISTDIALOG_FORMNAME = {AccountBankListDlg}
+Const VENDOR_SBAGRREMENTDIALOG_FORMNAME = {SBAgreementDlg}
+Const VENDOR_NALOGAGRREMENTDIALOG_FORMNAME = {NalogAgreementDlg}
+Const VENDOR_ESSENTIALLIST_VIEWNAME = {EssentialElements2}
+Const VENDOR_ESTABLISHMENT_VIEWNAME = {(Establishment)}
+
+Const VENDOR_SETTEMPORYEDIT_AGENTNAME = {SetTemporyEdit}
+Const VENDOR_REFUSETEMPORYEDIT_AGENTNAME = {RefuseTemporyEdit}
+
+Const REQUEST_DRAFT_STATUSNUMBER = {0}
+Const REQUEST_DRAFT_STATUSTEXT = {ЧЕРНОВИК}
+Const REQUEST_HEAD_STATUSNUMBER = {300}
+Const REQUEST_HEAD_STATUSTEXT = {РАССМОТРЕНИЕ РУКОВОДИТЕЛЕМ}
+Const REQUEST_SB_STATUSNUMBER = {100}
+Const REQUEST_SB_STATUSTEXT = {РАССМОТРЕНИЕ СБ}
+Const REQUEST_NALOG_STATUSNUMBER = {200}
+Const REQUEST_NALOG_STATUSTEXT = {РАССМОТРЕНИЕ НАЛОГОВЫМ СПЕЦИАЛИСТОМ}
+Const REQUEST_FIN_STATUSNUMBER = {400}
+Const REQUEST_FIN_STATUSTEXT = {РАССМОТРЕНИЕ ЮРИСТОМ}
+Const REQUEST_DENY_STATUSNUMBER = {800}
+Const REQUEST_DENY_STATUSTEXT = {ОТКЛОНЕН}
+Const REQUEST_PROCESSING_STATUSNUMBER = {500}
+Const REQUEST_PROCESSING_STATUSTEXT = {ОЖИДАНИЕ ОБРАБОТКИ}
+Const REQUEST_DONE_STATUSNUMBER = {600}
+Const REQUEST_DONE_STATUSTEXT = {ЗАПРОС ОБРАБОТАН}
+Const VENDOR_BLOK_STATUSNUMBER = {900}
+Const VENDOR_BLOK_STATUSTEXT = {ЗАБЛОКИРОВАН}
+Const VENDOR_CURRENT_STATUSNUMBER = {700}
+Const VENDOR_CURRENT_STATUSTEXT = {УТВЕРЖДЕН}
+
+Private nLine As String
+Private initLib As Integer
+Private WhatChangeList List As Variant
+Private AgreementList As Variant
+
+Dim VendorDb As NotesDatabase
+Dim VendorArchDb As NotesDatabase
+Dim VendorViewArch_ByUNID As NotesView
+Dim VendorViewArch_ByINNVAT As NotesView
+Dim VendorView_ByUNID As NotesView
+Dim VendorView_ByINNVAT As NotesView
+Dim VendorReqView_ByMDU As NotesView
+Dim VendorRefView_ByKey As NotesView
+
+'++LotusScript Development Environment:2:2:Initialize:1:10
+Sub Initialize
+	nLine = Chr(10) & Chr(13)
+	Call VD_InitVendorLib()
+End Sub
+
+'++LotusScript Development Environment:2:1:VD_CreateRequest:1:8
+Function VD_CreateRequest(TypeReq As String, MainDoc As NotesDocument) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "VD_CreateRequest"}
+	Dim ErrStr As String
+	
+	Dim reqDoc As NotesDocument
+	Dim sDoc As NotesDocument
+	
+	Set reqDoc = VD_GetVendorDb().Createdocument()
+	Call reqDoc.Replaceitemvalue("Form", "Request")
+	Select Case TypeReq
+		Case "NEW":
+			Call reqDoc.Replaceitemvalue("TypeDoc", "CreateRequest")
+		Case "CHANGE":
+			Call mainDoc.Copyallitems(reqDoc)
+			Call reqDoc.Removeitem("fHistory")
+			Call reqDoc.Replaceitemvalue("TypeDoc", "ChangeRequest")
+		Case "AGREEMENT":
+			Call mainDoc.Copyallitems(reqDoc)
+			Call reqDoc.Removeitem("fHistory")
+			Call reqDoc.Replaceitemvalue("TypeDoc", "AgreementRequest")
+		Case "BRANCH":
+			Call reqDoc.Replaceitemvalue("TypeDoc", "CreateRequest")
+			Call reqDoc.Removeitem("fHistory")
+			Call reqDoc.Replaceitemvalue("Branch", "1")
+			Call reqDoc.Replaceitemvalue("MainOfficeUNID", mainDoc.Getitemvalue("UNID"))
+			If mainDoc.Getitemvalue("UNID")(0) <> mainDOc.Universalid Then
+				Call reqDoc.Replaceitemvalue("MainOfficeUNID", mainDoc.Universalid)
+			End If
+			Set sDoc = VD_GetSetting("BranchFields")
+			ForAll x In sDoc.Getitemvalue("VAlue")
+				Call reqDoc.Replaceitemvalue(x, mainDoc.getitemvalue(x))
+			End ForAll
+		Case "NALOG":
+			Call mainDoc.Copyallitems(reqDoc)
+			Call reqDoc.Removeitem("SAudit")
+			Call reqDoc.Removeitem("DAudit")
+			Call reqDoc.Removeitem("fHistory")
+			Call reqDoc.Replaceitemvalue("TypeDoc", "NalogRequest")
+			Call reqDoc.Replaceitemvalue("StatusText", REQUEST_DRAFT_STATUSTEXT)
+			Call reqDoc.Replaceitemvalue("StatusNumber", REQUEST_DRAFT_STATUSNUMBER)
+			Call reqDoc.Replaceitemvalue("UNID", reqDoc.Universalid)
+			If Not mainDoc Is Nothing Then 
+				If MainDoc.Getitemvalue("UNID")(0) = "" Then
+					Call reqDoc.Replaceitemvalue("MainDocUNID", MainDoc.Universalid)
+				Else
+					Call reqDoc.Replaceitemvalue("MainDocUNID", MainDoc.Getitemvalue("UNID")(0))	
+				End If
+				Call reqDoc.Replaceitemvalue("MainDocDbFilepath", MainDoc.Parentdatabase.Filepath)
+				Call reqDoc.Replaceitemvalue("MainDocDbReplicaID", MainDoc.Parentdatabase.Replicaid)
+			End If
+			Set VD_CreateRequest = reqDoc
+			GoTo endh
+		Case "BLOCK":
+			Call reqDoc.Replaceitemvalue("TypeDoc", "BlockRequest")
+			Call reqDoc.Replaceitemvalue("Resolution", "BLOCK")
+		Case "RESTORE":
+			Call reqDoc.Replaceitemvalue("TypeDoc", "RestoreRequest")
+		Case Else:
+			Error 5007, "Неверный тип запроса"
+	End Select 
+	
+	reqDoc.Replaceitemvalue("SBGroup", "SB_VENDOR").Isauthors = True
+	
+	Call reqDoc.Replaceitemvalue("StatusText", REQUEST_DRAFT_STATUSTEXT)
+	Call reqDoc.Replaceitemvalue("StatusNumber", REQUEST_DRAFT_STATUSNUMBER)
+	Call reqDoc.Replaceitemvalue("UNID", reqDoc.Universalid)
+	If Not mainDoc Is Nothing Then 
+		If MainDoc.Getitemvalue("UNID")(0) = "" Then
+			Call reqDoc.Replaceitemvalue("MainDocUNID", MainDoc.Universalid)
+		Else
+			Call reqDoc.Replaceitemvalue("MainDocUNID", MainDoc.Getitemvalue("UNID")(0))	
+		End If
+		Call reqDoc.Replaceitemvalue("MainDocDbFilepath", MainDoc.Parentdatabase.Filepath)
+		Call reqDoc.Replaceitemvalue("MainDocDbReplicaID", MainDoc.Parentdatabase.Replicaid)		
+		Call reqDoc.Removeitem("DHead_Dep")
+		Call reqDoc.Removeitem("SHead_Dep")
+		Call reqDoc.Removeitem("DSecur")
+		Call reqDoc.Removeitem("SSecur")
+		Call reqDoc.Removeitem("DAudit")
+		Call reqDoc.Removeitem("SAudit")
+		Call reqDoc.Removeitem("SSB")
+		Call reqDoc.Removeitem("DSB")
+		Call reqDoc.Removeitem("Date")
+		Call reqDoc.Removeitem("CreatedDate")
+	End If
+
+	Set VD_CreateRequest = reqDoc
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_GetUserFuncRole:1:8
+Function VD_GetUserFuncRole(param As NotesDocument, UserName As String) As String
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetUserFuncRole"}
+	Dim ErrStr As String
+	
+	Dim FuncRole As string
+	Dim macro As Variant
+	
+	macro = Evaluate({@IsMember(@LowerCase("SBGroup");@LowerCase(@UserNamesList))})
+	
+	VD_GetUserFuncRole  = ""
+	
+	If param.Getitemvalue("Head_Dep")(0) = UserName Then
+		FuncRole = {Head}
+	ElseIf param.Getitemvalue("NalogControl")(0) = UserName Then
+		FuncRole = {NalogControl}
+	ElseIf param.Getitemvalue("CreatorLN")(0) = UserName Then
+		FuncRole = {Author}
+	ElseIf macro(0) = 1 Then
+		FuncRole = {SBControl}
+	End If
+	
+	VD_GetUserFuncRole = FuncRole
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_RunAgent:1:8
+Function VD_RunAgent(AgentName As String, Param As NotesDocument) As Boolean
+	On Error GoTo handler
+	Const FuncName = {Function "VD_RunAgent"}
+	Dim ErrStr As String
+	
+	Dim ag As NotesAgent
+	
+	Set ag = VD_GetVendorDb().Getagent(AgentName)
+	
+	If ag Is Nothing Then Error 5010, {Не найден агент: } & AgentName
+
+	If param Is Nothing Then
+		VD_RunAgent = (ag.Runonserver(param.Noteid) = 0)
+	Else
+		VD_RunAgent = (ag.Runonserver() = 0)
+	End If
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:2:VD_SetNewParent4Pay:1:8
+Sub VD_SetNewParent4Pay(Request As NotesDocument,ParentDoc As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "VD_SetNewParent4Pay"}
+	Dim ErrStr As String
+	
+	Dim view As NotesView
+	Dim dc As NotesDocumentCollection
+	
+	Set view = VD_GetVendorDb().Getview("EssentialElements")
+	Set dc = view.Getalldocumentsbykey(Request.Getitemvalue("UNID")(0), True)
+	
+	If Not Dc.Count < 1 Then 
+		Call dc.Stampall("VendorUNID", ParentDoc.Getitemvalue("UNID")(0))
+	End If
+	
+	Set view = VD_GetVendorDb().Getview("KBKList")
+	Set dc = view.Getalldocumentsbykey(Request.Getitemvalue("UNID")(0), True)
+	
+	If Not Dc.Count < 1 Then 
+		Call dc.Stampall("VendorUNID", ParentDoc.Getitemvalue("UNID")(0))
+	End If
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:VD_GetWhatChangeList:1:8
+Function VD_GetWhatChangeList(param As NotesDocument) As Variant
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetWhatChangeList"}
+	Dim ErrStr As String
+	
+	VD_GetWhatChangeList = param.Getitemvalue("WhatChange")
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_GetMainDoc:1:8
+Function VD_GetMainDoc(param As variant) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetMainDoc"}
+	Dim ErrStr As String
+	
+	Dim sKey As string
+	Dim mainDoc As NotesDocument
+	
+	Set mainDoc = nothing
+	
+	select Case TypeName(param)
+		Case "NOTESDOCUMENT":
+			' Запрос
+			sKey = param.getitemvalue("MainDocUNID")(0)
+		Case "STRING":
+			'UNID основного
+			sKey = param
+		Case else:
+			Error 5007, "Неверный параметр, тип: " & TypeName(param) 
+	End Select
+	
+	Set mainDoc = VD_GetVendorByUNID(sKey)
+	
+	Set VD_GetMainDoc = mainDoc
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_GetVendorArchDb:1:8
+Function VD_GetVendorArchDb() As NotesDatabase
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetVendorDb"}
+	Dim ErrStr As String
+	
+	If Not VendorArchDb Is Nothing Then
+		Set VD_GetVendorArchDb = VendorArchDb
+		Exit Function
+	End If
+	
+	Set VendorArchDb = DBT_GetDbBySearchKey(VENDOR_ARCHIVE_DBKEY)
+	If VendorArchDb Is Nothing Then Error 5001, "Не найден Архив списка поставщиков."
+	If Not VendorArchDb.Isopen Then Error 5002, "Архив списка поставщиков недоступен."
+	
+	Set VD_GetVendorArchDb = VendorArchDb
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:2:VD_SetWhatChangeList:1:8
+Sub VD_SetWhatChangeList(param As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "VD_SetWhatChangeList"}
+	Dim ErrStr As String
+	
+	Dim originDoc As NotesDocument
+	Dim wcArrOld As Variant
+	Dim wcArr As Variant
+	Dim sett As NotesDocument
+	Dim errParam As String
+	
+	Set originDoc = VD_GetVendorByUNID(param.Getitemvalue("MainDocUNID")(0))
+	If originDoc Is Nothing Then GoTo endh
+	
+	Set sett = VD_GetSetting("FieldsRequestChange")
+	wcArr = ArrayInit("")
+	
+	ForAll x In sett.getitemvalue("Value")
+		WhatChangeList(x) = ""
+	End ForAll
+	
+	ForAll x In WhatChangeList
+		Print ListTag(x) 
+		errParam = x
+		If ArrayisDiference(originDoc.Getitemvalue(ListTag(x)),param.Getitemvalue(ListTag(x))) Then
+			wcArr = ArrayAppendElement(wcArr,ListTag(x))
+		End If
+	End ForAll
+	
+	wcArr = FullTrim(wcArr)
+	wcArr = ArrayUnique(wcArr)
+	If wcArr(0) = "" Then GoTo endh
+	wcArrOld = VD_GetWhatChangeList(param)
+	wcArr = ArrayAppendArray(wcArrOld,wcArr)
+	wcArr = FullTrim(ArrayUnique(wcArr))
+	Call param.Replaceitemvalue("WhatChange", wcArr)
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$ & nLine & errParam
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:VD_GetVendorByINNVAT:1:8
+Function VD_GetVendorByINNVAT(INNVAT As String) As NotesDocumentCollection
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetVendorByINNVAT"}
+	Dim ErrStr As String
+	
+	Dim resultDc As NotesDocumentCollection
+	
+	If VendorView_ByINNVAT Is Nothing Then
+		Set VendorView_ByINNVAT = VD_GetVendorDb().Getview(VENDOR_INNVAT_VIEWNAME)
+		If VendorView_ByINNVAT Is Nothing Then Error 5005, "Не найдено представление: " & VENDOR_INNVAT_VIEWNAME
+	End If
+	
+	Set resultDc = VendorView_ByINNVAT.Getalldocumentsbykey(INNVAT, True)
+			
+	Set VD_GetVendorByINNVAT = resultDc
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:2:VD_UpdateOrCreateEssentialElement:1:8
+Sub VD_UpdateOrCreateEssentialElement(EssentialElement As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "VD_UpdateOrCreateEssentialElement"}
+	Dim ErrStr As String
+	
+	Dim accView As NotesView
+	Dim accDoc As NotesDocument
+	Dim vals(5)
+	Dim sKey(2) As Variant
+	
+	Set accView = VD_GetVendorDb().getview(VENDOR_ESSENTIALLIST_VIEWNAME)
+
+	skey(0) = EssentialElement.GetItemValue("VendorUNID")(0)
+	skey(1) = EssentialElement.GetItemValue("BankBik")(0)
+	skey(2) = EssentialElement.GetItemValue("BankAccount")(0)
+	
+	vals(0) = EssentialElement.getitemvalue("BankAccount")(0)
+	vals(1) = EssentialElement.getitemvalue("BankAdress")(0)
+	vals(2) = EssentialElement.getitemvalue("BankBik")(0)
+	vals(3) = EssentialElement.getitemvalue("BankCity")(0)
+	vals(4) = EssentialElement.getitemvalue("BankName")(0)
+	vals(5) = EssentialElement.getitemvalue("BankLoroAccount")(0)
+	
+	Set accDoc = accView.GetDocumentByKey(skey,True)
+	If accDoc Is Nothing Then
+		Set accDoc = VD_GetVendorDb().createDocument
+		Call accDoc.ReplaceItemValue("VendorUNID",EssentialElement.GetItemValue("VendorUNID")(0))
+		Call accDoc.ReplaceItemValue("PaymanBank",vals(4))
+		Call accDoc.ReplaceItemValue("PaymanBik",vals(2))
+		Call accDoc.ReplaceItemValue("Form","Payman")
+		Call accDoc.ReplaceItemValue("PaymanAccount",vals(0))
+		Call accDoc.ReplaceItemValue("PaymanBankAddress",vals(1))
+		Call accDoc.ReplaceItemValue("PaymanLoroAccount",vals(5))
+		Call accDoc.ReplaceItemValue("Author",Implode(Evaluate({@username})))
+		accDoc.ReplaceItemValue("WhoCanEDit","*").isauthors = True
+		Call accDoc.Save(True,False)
+	Else
+		Call accDoc.ReplaceItemValue("VendorUNID",EssentialElement.GetItemValue("VendorUNID")(0))
+		Call accDoc.ReplaceItemValue("PaymanBank",vals(4))
+		Call accDoc.ReplaceItemValue("PaymanBik",vals(2))
+		Call accDoc.ReplaceItemValue("PaymanAccount",vals(0))
+		Call accDoc.ReplaceItemValue("PaymanBankAddress",vals(1))
+		Call accDoc.ReplaceItemValue("PaymanLoroAccount",vals(5))
+		Call accDoc.ReplaceItemValue("Author",Implode(Evaluate({@username})))
+		Call accDoc.Save(True,False)
+	End If
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:VD_GetAllRequestByMainDocUNID:1:8
+Function VD_GetAllRequestByMainDocUNID(sUNID As String, Types As String) As NotesDocumentCollection
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetAllRequestByMainDocUNID"}
+	Dim ErrStr As String
+	
+	Dim sKey As Variant
+	Dim resDc As NotesDocumentCollection
+	
+	Set VD_GetAllRequestByMainDocUNID = nothing
+	
+	If VendorReqView_ByMDU Is Nothing Then
+		Set VendorReqView_ByMDU = VendorDb.Getview(VENDOR_REQUESTBYMDU_VIEWNAME)
+		If VendorReqView_ByMDU Is Nothing Then Error 5005, "Не найдено представление: " & VENDOR_REQUESTBYMDU_VIEWNAME
+	End If
+	
+	If Len(Types) > 0 Then
+		ReDim sKey(1) As Variant
+		sKey(0) = sUNID
+		sKey(1) = Types
+	Else
+		sKey = sUNID
+	End If
+	
+	Set resDc = VendorReqView_ByMDU.Getalldocumentsbykey(sKey, True)
+	
+	Set VD_GetAllRequestByMainDocUNID = resDc
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_GetSetting:1:8
+Function VD_GetSetting(SettingName As String) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetSetting"}
+	Dim ErrStr As String
+	
+	Dim sDoc As NotesDocument
+	Dim sView As NotesView
+	
+	Set VD_GetSetting  = Nothing
+	
+	Set sView = VD_GetVendorDb().GetView(VENDOR_SETTINGS)
+	
+	Set sDoc = sView.GetDocumentByKey(SettingName,True)
+	If sDoc Is Nothing Then Error 5005, "Не найдена настройка: "  & SettingName
+	
+	Set VD_GetSetting = sDoc
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_GetVendorDb:1:8
+Function VD_GetVendorDb() As NotesDatabase
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetVendorDb"}
+	Dim ErrStr As String
+	
+	If Not VendorDb Is Nothing Then
+		Set VD_GetVendorDb = VendorDb
+		Exit Function
+	End If
+	
+	Set VendorDb = DBT_GetDbBySearchKey(VENDOR_DBKEY)
+	If VendorDb Is Nothing Then Error 5001, "Не найден список поставщиков."
+	If Not VendorDb.Isopen Then Error 5002, "Список поставщиков недоступен."
+	
+	Set VD_GetVendorDb = VendorDb
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_GetVendorByName:1:8
+Function VD_GetVendorByName(VendorName As String, ApproveOnly As boolean) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetVendorByName"}
+	Dim ErrStr As String
+	
+	Dim VendorView_ByName As NotesView
+	Dim resDoc As NotesDocument
+	
+	If ApproveOnly Then 
+		Set VendorView_ByName = VD_GetVendorDb().Getview("ApproveByName")
+	else
+		Set VendorView_ByName = VD_GetVendorDb().Getview("AllVendorByName")
+	End if
+	'
+	If VendorView_ByName Is Nothing Then Error 5005, "Не найдено представление: ApproveByName"
+
+	Set resDoc = VendorView_ByName.Getdocumentbykey(UCase(VendorName),True)
+	
+	Set VD_GetVendorByName = resDoc
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_NeedReAgreement:1:8
+Function VD_NeedReAgreement(param As NotesDocument) As Boolean
+	On Error GoTo handler
+	Const FuncName = {Function "VD_NeedReAgreement"}
+	Dim ErrStr As String
+	
+	Dim sDoc As NotesDocument
+	Dim CriticalFileds As Variant
+	Dim ChangeList As Variant
+	Dim resList As Variant
+	
+	VD_NeedReAgreement = False
+	
+	If param.Getitemvalue("TypeDoc")(0) = "AgreementRequest" Then
+		VD_NeedReAgreement = True
+		GoTo endh
+	End If
+	
+	ChangeList = VD_GetWhatChangeList(param)
+	If Isempty(ChangeList) Then GoTo endh
+	
+	Set sDoc = VD_GetSetting(StrRight(param.Getitemvalue("CategoryUL")(0),"|"))
+	If sDoc Is Nothing Then Error 5007, "Отсутствует настройка требуемых полей. Необходимо завести."
+	
+	CriticalFileds = sDoc.Getitemvalue("Value")
+	If IsEmpty(CriticalFileds) Then GoTo endh 
+	
+	ForAll x In CriticalFileds
+		x = StrLeft(x,"|")
+	End ForAll
+	
+	resList = ArrayCommonElements(CriticalFileds,ChangeList)
+	resList = fulltrim(resList)
+	If resList(0) = "" Then GoTo endh ' Всегда есть 0 элемент
+	
+	VD_NeedReAgreement = True
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:2:VD_MoveVendorToStatus:1:8
+Sub VD_MoveVendorToStatus(param As NotesDocument, NewStatus As String, OnServer As Boolean)
+	On Error GoTo handler
+	Const FuncName = {Sub "VD_MoveVendorToStatus"}
+	Dim ErrStr As String
+	
+	Dim NewStatusText As String
+	Dim NewStatusNumber As String
+	Dim StatusDateField As String
+	Dim StatusSignField As String
+	
+	Select Case UCase(NewStatus)
+		Case "VENDOR_BLOK":
+			NewStatusText = VENDOR_BLOK_STATUSTEXT
+			NewStatusNumber = VENDOR_BLOK_STATUSNUMBER
+			StatusDateField = "DBlock" 
+			StatusSignField = "SBlock"
+		Case "VENDOR_CURRENT":
+			NewStatusText = VENDOR_CURRENT_STATUSTEXT
+			NewStatusNumber = VENDOR_CURRENT_STATUSNUMBER
+'			Call param.Replaceitemvalue("LastReqUpdate", Today)
+			Call param.Removeitem("Notify")
+'		Case "VENDOR_DENY":
+'			NewStatusText = VENDOR_DENY_STATUSTEXT
+'			NewStatusNumber = VENDOR_DENY_STATUSNUMBER
+'			StatusDateField = "DPostav" 
+'			StatusSignField = "SPostav"
+		Case Else:
+			Error 6007, "Не найден статус: " & nLine & NewStatus
+	End Select
+	
+	' backup
+	Call param.Replaceitemvalue("StatusText_Bkp", param.Getitemvalue("StatusText"))
+	Call param.Replaceitemvalue("StatusNumber_Bkp", param.Getitemvalue("StatusNumber"))
+	
+	Call param.Replaceitemvalue("StatusText", NewStatusText)
+	Call param.Replaceitemvalue("StatusNumber", NewStatusNumber)
+	
+	If StatusSignField <> "" Then
+		If Not OnServer Then 
+			Call param.Replaceitemvalue(StatusDateField, CDat(param.Getitemvalue("DSB")))
+			Call param.Replaceitemvalue(StatusSignField, param.Getitemvalue("SSB"))
+		Else
+			Call param.Replaceitemvalue(StatusDateField, Today)
+			Call param.Replaceitemvalue(StatusSignField, Implode(Evaluate({@UserName})))
+		End If
+	End If
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:2:VD_SetVendorDb:1:8
+Sub VD_SetVendorDb(db As NotesDatabase)
+	On Error GoTo handler
+	Const FuncName = {Sub "VD_SetVendorDb"}
+	Dim ErrStr As String
+		
+	Set VendorDb = db
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:VD_GetVendorByUNID:1:8
+Function VD_GetVendorByUNID(UNID As String) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetVendorDoc"}
+	Dim ErrStr As String
+	
+	Dim resDoc As NotesDocument
+	
+	If VendorView_ByUNID Is Nothing Then
+		Set VendorView_ByUNID = VD_GetVendorDb().Getview(VENDOR_BYUNID_VIEWNAME)
+		If VendorView_ByUNID Is Nothing Then Error 5005, "Не найдено представление: " & VENDOR_BYUNID_VIEWNAME
+	End If
+	
+	Set resDoc = VendorView_ByUNID.Getdocumentbykey(UNID,True)
+	
+	If resDoc Is Nothing Then 
+		Set resDoc = DBT_GetExtDocumentByUNID({VENDOR_ARCHIVE}, "", "", UNID)
+	End If
+
+	If resDoc Is Nothing Then 
+		Set resDoc = DBT_GetExtDocumentByUNID({VENDOR_ARCHIVE_DCS}, "", "", UNID)
+	End If
+	
+	Set VD_GetVendorByUNID = resDoc
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:VD_NeedNalogContol:1:8
+Function VD_NeedNalogContol(param As NotesDocument) As Boolean
+	On Error GoTo handler
+	Const FuncName = {Function "VD_NeedNalogContol"}
+	Dim ErrStr As String
+	
+	Dim tmpArr As Variant
+	
+	VD_NeedNalogContol = False
+	
+	If param.GetItemValue("Risk")(0) = "3" Then
+		If Left(Right(param.Getitemvalue("CategoryUL")(0),2),1) = "0" Then
+			VD_NeedNalogContol = True
+			Exit Function
+		End If
+	End If
+	
+	If param.GetItemValue("Poligr")(0) = "1" Then
+		VD_NeedNalogContol = True
+		Exit Function
+	End If
+	
+	If Len(param.GetItemValue("ScalaCode")(0)) > 0 Then
+		VD_NeedNalogContol = True
+		Exit Function
+	End If
+	
+	If Left(Right(param.Getitemvalue("CategoryUL")(0),2),1) = "0" Then
+		tmpArr = ArrayCommonElements(param.Getitemvalue("Category_scala"),VD_GetSetting("NalogCategory").Getitemvalue("Value"))
+		If tmpArr(0) = "" Then
+			VD_NeedNalogContol = True
+			Exit Function
+		End If
+	End If
+		
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:2:VD_RollBackRequest:1:8
+Sub VD_RollBackRequest(param As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "VD_RollBackRequest"}
+	Dim ErrStr As String
+	
+	Call param.Replaceitemvalue("StatusText", param.Getitemvalue("StatusText_Bkp"))
+	Call param.Replaceitemvalue("StatusNumber", param.Getitemvalue("StatusNumber_Bkp"))
+	Call param.removeitem("StatusText_Bkp")
+	Call param.removeitem("StatusNumber_Bkp")
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:VD_MoveRequestToStatus:1:8
+Function VD_MoveRequestToStatus(param As NotesDocument, CurrentStatusCode As String, Username As String) As Boolean
+	On Error GoTo handler
+	Const FuncName = {Function "VD_MoveRequestToStatus"}
+	Dim ErrStr As String
+	
+	Dim NewStatusText As String
+	Dim NewStatusNumber As String
+	Dim StatusDateField As String
+	Dim StatusSignField As String
+	
+	StatusDateField = "" 
+	StatusSignField = ""
+	
+	Select Case UCase(param.Getitemvalue("Form")(0) & "_" & CurrentStatusCode)
+		Case "REQUEST_DRAFT":
+				NewStatusText = REQUEST_SB_STATUSTEXT
+				NewStatusNumber = REQUEST_SB_STATUSNUMBER
+				If param.Getitemvalue("TypeDoc")(0) = "NalogRequest" Then
+					NewStatusText = REQUEST_NALOG_STATUSTEXT
+					NewStatusNumber = REQUEST_NALOG_STATUSNUMBER
+				End If
+				If param.Getitemvalue("Branch")(0) = "1" Then
+					NewStatusText = REQUEST_HEAD_STATUSTEXT
+					NewStatusNumber = REQUEST_HEAD_STATUSNUMBER
+				End If 
+		Case "REQUEST_HEAD":
+			NewStatusText = REQUEST_PROCESSING_STATUSTEXT
+			NewStatusNumber = REQUEST_PROCESSING_STATUSNUMBER
+			StatusDateField = "DHead_Dep" 
+			StatusSignField = "SHead_Dep"
+		Case "REQUEST_SB":
+			If param.Getitemvalue("TypeDoc")(0) <> "BlockRequest" Then
+					StatusDateField = "DSecur" 
+					StatusSignField = "SSecur"
+					
+					If VD_NeedNalogContol(param) Then
+						NewStatusText = REQUEST_NALOG_STATUSTEXT
+						NewStatusNumber = REQUEST_NALOG_STATUSNUMBER
+					Else
+							NewStatusText = REQUEST_HEAD_STATUSTEXT
+							NewStatusNumber = REQUEST_HEAD_STATUSNUMBER
+					End If			
+			Else
+				NewStatusText = REQUEST_PROCESSING_STATUSTEXT
+				NewStatusNumber = REQUEST_PROCESSING_STATUSNUMBER
+			End If
+		Case "REQUEST_TOPROCESSING":
+			NewStatusText = REQUEST_PROCESSING_STATUSTEXT
+			NewStatusNumber = REQUEST_PROCESSING_STATUSNUMBER
+		Case "REQUEST_NALOG":
+			If param.Getitemvalue("TypeDoc")(0) <> "NalogRequest" Then
+				If CInt(param.Getitemvalue("Risk")(0)) > 3 Then
+					NewStatusText = REQUEST_FIN_STATUSTEXT
+					NewStatusNumber = REQUEST_FIN_STATUSNUMBER
+				Else
+					NewStatusText = REQUEST_HEAD_STATUSTEXT
+					NewStatusNumber = REQUEST_HEAD_STATUSNUMBER
+				End If
+			Else
+				NewStatusText = REQUEST_PROCESSING_STATUSTEXT
+				NewStatusNumber = REQUEST_PROCESSING_STATUSNUMBER
+			End If
+			StatusDateField = "DAudit" 
+			StatusSignField = "SAudit"
+		Case "REQUEST_PROCESSING":
+			NewStatusText = REQUEST_DONE_STATUSTEXT
+			NewStatusNumber = REQUEST_DONE_STATUSNUMBER
+		Case "REQUEST_DONE":
+			' Конечный
+			
+		Case "REQUEST_DENY":
+			' Доработка запроса
+			NewStatusText = REQUEST_DRAFT_STATUSTEXT
+			NewStatusNumber = REQUEST_DRAFT_STATUSNUMBER
+		Case Else:
+			Error 6007, "Не найден статус: " & nLine & param.Getitemvalue("Form")(0) & "_" & CurrentStatusCode
+	End Select
+move:
+	' backup
+	Call param.Replaceitemvalue("StatusText_Bkp", param.Getitemvalue("StatusText"))
+	Call param.Replaceitemvalue("StatusNumber_Bkp", param.Getitemvalue("StatusNumber"))
+	
+	Call param.Replaceitemvalue("StatusText", NewStatusText)
+	Call param.Replaceitemvalue("StatusNumber", NewStatusNumber)
+	
+	If StatusDateField <> "" Then
+		Call param.Replaceitemvalue(StatusDateField, Today)
+		Call param.Replaceitemvalue(StatusSignField, UserName)
+		' Поля подписи и даты, для последнего согласовавшего, используются для опредления
+		' но подпись не при обработке запроса сервером
+		
+		If NewStatusText <> REQUEST_DONE_STATUSTEXT Then 
+			Call param.Replaceitemvalue("DSB", Today)
+			Call param.Replaceitemvalue("SSB", UserName)
+			Call param.Replaceitemvalue("notifyDate", Today)	
+		End If				
+	End If
+	
+	VD_MoveRequestToStatus = True
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:2:VD_InitVendorLib:1:8
+Sub VD_InitVendorLib()
+	
+	If initLib <> 1 Then
+		Call VD_GetVendorDb()
+'		Call VD_GetVendorArchDb()
+		initLib = 1
+	End If
+	
+End Sub
+
+'++LotusScript Development Environment:2:2:VD_CopyAgreementFields:1:8
+Sub VD_CopyAgreementFields(param As NotesDocument, MainDoc As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "VD_CopyAgreementFields"}
+	Dim ErrStr As String
+	
+	Dim originDoc As NotesDocument
+	Dim wcArr As Variant
+	Dim sett As NotesDocument
+	
+	If MainDoc Is nothing then
+		Set originDoc = VD_GetVendorByUNID(param.Getitemvalue("MainDocUNID")(0))
+		If originDoc Is Nothing Then GoTo endh
+	Else
+		Set originDoc = MainDoc
+	End if
+	Set sett = VD_GetSetting("AgreementFields")
+	AgreementList = sett.getitemvalue("Value")
+	
+	ForAll x In AgreementList
+		If Len("" & param.Getitemvalue(x)(0)) > 0 Then Call originDoc.Replaceitemvalue(x, param.Getitemvalue(x)) 
+	End ForAll
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:VD_CheckINNValue:1:8
+Function VD_CheckINNValue(INN As String) As Boolean
+	On Error GoTo handler
+	Const FuncName = {Function "VD_GetMainDoc"}
+	Dim ErrStr As String
+	
+	Const  InnKUL ={2*4*10*3*5*9*4*6*8*0}
+	Const  InnKFL_FLast ={7*2*4*10*3*5*9*4*6*8*0} ' первая из последних двух цифр
+	Const  InnKFL_SLast ={3*7*2*4*10*3*5*9*4*6*8*0} ' вторая из последних двух цифр
+	Const CRC_Mod = 11
+	Dim modulus As Variant
+	Dim s As String
+	Dim i As Integer
+	Dim CRC As Integer
+	Dim CRC_Value As Integer
+	
+'	If INN = "нет данных" Then
+'		VD_CheckINNValue = True
+'		Exit function
+'	End If
+	
+	For i = 1 To Len(INN)
+		If Not IsNumeric(Mid$(INN, i, 1)) Then Exit Function
+	Next
+	
+	CRC = 0
+	
+	Select Case Len(INN)
+		Case 10:
+'			Print {*} & inn & {*}
+			modulus = Split(InnKUL,{*})
+			For i = 1 To Len(INN)
+				s = Mid$(INN, i, 1)
+'				Print  CInt(modulus(i-1)) & {*} & CInt(s)
+				CRC = CRC + (CInt(modulus(i-1))*CInt(s))
+			Next
+			Print "" & CRC
+			CRC_Value = CRC Mod 11
+'			Print "" & CRC_Value
+			If CRC_Value > 9 Then CRC_Value = CRC_Value Mod 10
+'			Print "" & CRC_Value & {<>} & CInt(s) 
+			If CRC_Value <> CInt(s) Then Exit Function
+		Case 12:
+			modulus = Split(InnKFL_FLast,{*})
+			
+			For i = 1 To (Len(INN) - 1) 
+				s = Mid$(INN, i, 1)
+				CRC = CRC + (CInt(modulus(i-1))*CInt(s))
+			Next
+			CRC_Value = CRC Mod 11
+			If CRC_Value > 9 Then CRC_Value = CRC_Value Mod 10
+			If CRC_Value <> CInt(s) Then Exit Function
+			
+			Erase modulus
+			CRC = 0
+			modulus = Split(InnKFL_SLast,{*})
+			For i = 1 To (Len(INN)) 
+				s = Mid$(INN, i, 1)
+				CRC = CRC + (CInt(modulus(i-1))*CInt(s))
+			Next
+			CRC_Value = CRC Mod 11
+			If CRC_Value > 9 Then CRC_Value = CRC_Value Mod 10
+			If CRC_Value <> CInt(s) Then Exit Function
+			
+		Case Else:
+			Exit Function
+	End Select
+
+	VD_CheckINNValue = True
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function

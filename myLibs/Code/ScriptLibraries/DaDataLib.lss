@@ -1,0 +1,155 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	Library XMLHttpReq
+	Created Jun 21, 2018 by Alexandr S. Olympiev/OTTO/RU
+	Description: Comments for Library
+%END REM
+Option Public
+Option Declare
+
+Use "ls.snapps.JSONReader"
+Use "ls.snapps.JSONObject"
+
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Function DDL_getStandartisation (ByVal Names, ByVal query) As Variant
+Declare Function DDL_getHint(ByVal Names, ByVal query, ByVal count) As Variant
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Const DADATA_TOKEN = "Token 2b92cf89c3a64499c71e56c895ecc21b2f1ab343"
+'Const DADATA_TOKEN1 = "Token 2ae930eb4f5e19b9c5911b5eb5395cac4fc1852c"
+Const DADATA_SECRETTOKEN = "1fdd4ade2d2617d8f7b806be6b9409b86f793c37"
+Const DADATA_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/"
+Const DADATA_URL_ST = "https://dadata.ru/api/v2/clean/"
+Const DADATA_CONTENTTYPE = "application/json"
+
+Const DADATA_ADDRESS = "address"
+Const DADATA_FIO = "fio"
+Const DADATA_PARTY = "party"
+Const DADATA_BANK = "bank"
+Const DADATA_EMAIL = "email"
+
+Const DADATA_MAINTAG = "suggestions"
+Const DADATA_DATATAG = "data"
+
+Const TIMEOUT = "2000"
+
+Const TMP_FILE_NAME = {tmpOli.oli}
+
+'++LotusScript Development Environment:2:1:DDL_getStandartisation:5:8
+' DaDataLib -> Function DDL_getStandartisation
+' Variant
+' dcs-olympiev Jun 21, 2018 
+' *********************************************************************************
+Function DDL_getStandartisation (ByVal Names, ByVal query) As Variant
+	Const FuncName = {DDL_getStandartisation}
+	On Error GoTo Errh
+
+	Dim http, request
+	Dim result
+	Dim inStream As NotesStream, outStream As NotesStream
+	Dim s As New NotesSession
+	Dim url As String
+	
+	Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+	http.setTimeouts TIMEOUT, TIMEOUT, TIMEOUT, TIMEOUT
+	request = {[ "} & query & {" ]}
+	
+	If Names = DADATA_FIO Then Names = {name}
+	url = DADATA_URL_ST & Names
+	http.Open "POST", url
+	http.setRequestHeader "Content-Type", DADATA_CONTENTTYPE
+	http.setRequestHeader "Authorization", DADATA_TOKEN
+	http.setRequestHeader "X-Secret", DADATA_SECRETTOKEN
+	http.send request
+
+	Dim JsonReader As New JSONReader
+	Dim JSON As Variant
+	
+	Set inStream = s.Createstream()
+	Set outStream = s.Createstream()
+	Call inStream.open(TMP_FILE_NAME,"UTF-8")
+	Call inStream.Write( http.responseBody)
+	
+	Call inStream.Close()
+
+	Call outStream.Open(TMP_FILE_NAME,"UTF-8")
+	
+	Set JSON = JsonReader.Parse( outStream.ReadText())
+
+	Call outStream.Truncate()
+	Call outStream.Close()
+	Call inStream.Truncate()
+	
+	DDL_getStandartisation = JSON.items
+
+	GoTo EndH
+ErrH:
+	Error Err, FuncName & ", стр. " & CStr(Erl) & Chr(10) & Chr(13) & Error$
+	Resume EndH 
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:DDL_getHint:1:8
+Function DDL_getHint(ByVal Names, ByVal query, ByVal count) As Variant
+	Const FuncName = {DDL_getHint}
+	On Error GoTo Errh
+	
+	Dim http As NOTESHTTPREQUEST
+	Dim s As New NotesSession
+	Dim url As String
+	
+	'url = TRANSLATE_URL & "?key=" & API_KEY & "&lang=" & langTo & "&text=" & textFrom  
+
+	Set http = s.Createhttprequest()
+	
+	Call http.Setheaderfield("Content-Type", DADATA_CONTENTTYPE)
+	Call http.Setheaderfield("Authorization", DADATA_TOKEN)
+	http.Timeoutsec = TIMEOUT
+	Dim request As String
+	
+	Dim res As Variant
+	request = "{ ""query"": """ & query & """, ""count"": """ & count & """ }"
+	'	Call http.Setheaderfield("key", API_KEY)
+	'		Call http.Setheaderfield("text", textFrom)
+	'		Call http.Setheaderfield("lang", "ru-en")
+	
+	'		res = http.post(url, textFrom)
+
+	res = http.Post(DADATA_URL & Names, request)
+	DDL_getHint = res
+	
+'	Dim http, request
+'	Dim result
+'	Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+'	http.setTimeouts TIMEOUT, TIMEOUT, TIMEOUT, TIMEOUT
+'	request = "{ ""query"": """ & query & """, ""count"": """ & count & """ }"
+	
+'	http.Open "POST", DADATA_URL & Names
+	
+'	http.setRequestHeader "Content-Type", DADATA_CONTENTTYPE
+'	http.setRequestHeader "Authorization", DADATA_TOKEN
+'	http.send request
+	
+'	Dim JsonReader As New JSONReader
+'	Dim JSON As Variant
+'	Set JSON = JsonReader.Parse(http.responseText)
+
+'	result = JSON.Items
+'	If IsElement(result(DADATA_MAINTAG)) Then
+'		DDL_getHint =  result(DADATA_MAINTAG).items
+'	Else
+'		DDL_getHint = ""
+'	End If
+	
+	GoTo EndH
+ErrH:
+	Error Err, FuncName & ", стр. " & CStr(Erl) & Chr(10) & Chr(13) & Error$
+	Resume EndH 
+EndH:
+End Function
+
+
+
+
+

@@ -1,0 +1,189 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library YandexTranslateLib10
+'Olimpus: Oct 16, 2019
+'********************************************
+Option Public
+Option Declare
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class YandexTranslate
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {YandexTranslateLib10}
+
+Private Const API_KEY = "trnsl.1.1.20180724T081930Z.b2d3b96aa70a457f.3cea24b4c2b0e6ad9d9040188858476ff51590da"
+Private Const TRANSLATE_URL = "https://translate.yandex.net/api/v1.5/tr.json/translate"
+'********************************************
+'Class YandexTranslate
+'Olimpus: Oct 16, 2019
+'********************************************
+Class YandexTranslate
+	private langFrom_ex As String
+	Private langTo_ex As String
+	Sub New
+		On Error GoTo ErrH
+
+		langTo_ex = "ru"
+	
+		GoTo EndH
+ErrH:
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Property Set langTo
+	'Olimpus: Oct 16, 2019
+	'********************************************
+	Public Property Set langTo As String
+	On Error GoTo ErrH
+
+	langTo_ex = langTo
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Property
+	'********************************************
+	'Property Get langTo
+	'String
+	'Olimpus: Oct 16, 2019
+	'********************************************
+	Public Property Get langTo As String
+	On Error GoTo ErrH
+
+	langTo = langTo_ex	
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Property
+	'********************************************
+	'Property Set langFrom
+	'Olimpus: Oct 16, 2019
+	'********************************************
+	Public Property Set langFrom As String
+	On Error GoTo ErrH
+
+	langFrom_ex = langFrom
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Property
+	'********************************************
+	'Property Get langFrom
+	'String
+	'Olimpus: Oct 16, 2019
+	'********************************************
+	Public Property Get langFrom As String
+	On Error GoTo ErrH
+
+	langFrom = langFrom_ex
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Property
+	'********************************************
+	'Function getTranslatedText
+	'String
+	'Olimpus: Oct 16, 2019
+	'********************************************
+	Public Function getTranslatedText(textFrom As String) As String
+	On Error GoTo ErrH
+
+	Dim http As NOTESHTTPREQUEST
+	Dim s As New NotesSession
+	Dim content(0 To 2) As String
+		
+	content(0) = "key=" & API_KEY
+	content(1) = textFrom
+	content(2) = langTo
+	Dim url As String
+	
+		url = TRANSLATE_URL & "?key=" & API_KEY & "&lang=" & langTo & "&text=" & textFrom  
+	MsgBox url
+	Set http = s.Createhttprequest()
+	Dim res As Variant
+'	Call http.Setheaderfield("key", API_KEY)
+'		Call http.Setheaderfield("text", textFrom)
+'		Call http.Setheaderfield("lang", "ru-en")
+	
+'		res = http.post(url, textFrom)
+
+		res = http.Get(Url)
+		
+Dim response As String
+ForAll R In res
+	response = response & Chr(R)
+End ForAll
+	MsgBox response
+	stop
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function getTranslate9
+	'String
+	'Olimpus: Dec 11, 2019
+	'********************************************
+	Public Function getTranslate9(trText As String) As String
+	On Error GoTo ErrH
+
+		Dim http As Variant
+
+		
+		
+		Dim request
+		Dim result
+		Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+		http.setTimeouts 1000,1000, 1000, 1000
+		
+		request = "https://translate.yandex.net/api/v1.5/tr.json/translate?key=trnsl.1.1.20180724T081930Z.b2d3b96aa70a457f.3cea24b4c2b0e6ad9d9040188858476ff51590da&lang=en&Text=Утро"
+		
+		http.Open "GET", request
+		
+		On Error 213 Resume next
+		http.send 
+		On Error GoTo ErrH
+		
+		If http.Status = "200" Then
+			result = http.responseText
+			getTranslate9 = result
+		End If
+		
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+
+

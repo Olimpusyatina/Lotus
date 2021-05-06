@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?><note xmlns="http://www.lotus.com/dxl" class="filter" maintenanceversion="1.0" replicaid="432586CD00293F3C" version="11.0">
+<noteinfo noteid="1c6" sequence="2" unid="566A9DCE401CF2ED432586CD00299F4A">
+<created><datetime>20210506T103437,54+03</datetime></created>
+<modified><datetime>20210506T105904,91+03</datetime></modified>
+<revised><datetime>20210506T105904,90+03</datetime></revised>
+<lastaccessed><datetime>20210506T105904,90+03</datetime></lastaccessed>
+<addedtofile><datetime>20210506T103437,56+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name><name>CN=Sergey A. Tyschuk/O=OTTO/C=RU</name><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
+<wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
+<item name="$Flags"><text>s34Q</text></item>
+<item name="$PublicAccess" sign="true"><text>1</text></item>
+<item name="$TITLE" sign="true"><text>FormatTools</text></item>
+<item name="$DesignerVersion" sign="true"><text>8.5.3</text></item>
+<item name="$Comment"><text>Форматирование всего, чего только можно</text></item>
+
+</note>

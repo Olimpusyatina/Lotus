@@ -1,0 +1,140 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library DBParcerFunctions
+'Olimpus: Sep 6, 2019
+'********************************************
+Option Public
+Option Declare
+Use "DBConstants"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Sub Initialize
+Declare Function SL_inString (str1 As String, str2 As String) As Boolean
+Declare Function SL_clearScript (textArr As String) As String
+Declare Function SL_getHash (strToHash) As String
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {DBParcerFunctions}
+
+
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:1:SL_inString:5:8
+' Library ScriptLibrary -> Function inString
+' Boolean
+' DCS-Olympiev Apr 9, 2019
+' *********************************************************************************
+Function SL_inString (str1 As String, str2 As String) As Boolean
+	On Error GoTo ErrH
+
+	If InStr(UCase(str1), UCase(str2)) > 0 Then SL_inString = True
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+'++LotusScript Development Environment:2:1:SL_clearScript:5:8
+' Library ScriptLibrary -> Function LS_hasComment
+' Boolean
+' DCS-Olympiev Apr 10, 2019
+' *********************************************************************************
+Function SL_clearScript (textArr As String) As String
+	On Error GoTo ErrH
+		
+	Dim startsRem As Boolean
+	Dim comment As Boolean
+	
+	Dim counter As Integer
+	Dim resArr() As String
+	Dim resCounter As Integer
+	Dim arr As Variant
+	Dim addPrevious As Boolean
+	
+	arr = FullTrim(Split(Join(Split(textArr, EOL), Chr(13)),Chr(13)))
+	If Not IsArray(arr) Then GoTo Endh
+	ReDim resArr(0) As String
+	For counter = 0 To UBound(arr)
+		If SL_inString(arr(counter), COMMENT_SINGLE) Then
+			arr(counter) = StrLeft(arr(counter), COMMENT_SINGLE)
+			If arr(counter) = "" Then arr(counter) = COMMENT_SINGLE
+		End If
+		If SL_inString(arr(counter), COMMENT_END_REM) Then
+			comment = False
+			startsRem = False
+		ElseIf SL_inString(arr(counter), COMMENT_START_REM) Then
+			startsRem = True
+			comment = True
+		ElseIf InStr(arr(counter), COMMENT_SINGLE) = 1 Then
+			comment = True
+		ElseIf Not startsRem Then
+			comment = False
+		End If
+		
+		If Not comment Then
+			If Not SL_inString(arr(counter), COMMENT_END_REM) Then
+				If addPrevious Then
+					resArr(resCounter) = resArr(resCounter) & " " & arr(counter)					
+				Else
+					ReDim Preserve resArr(resCounter) As String
+					resArr(resCounter) = arr(counter)					
+				End If
+				If Right(resArr(resCounter),Len(resArr(resCounter)) - 1) = NOT_NEWLINE_DELEMITER Then
+					addPrevious = True
+				Else
+					addPrevious = False
+					resCounter = resCounter + 1
+				End If
+			End If
+		End If
+	Next
+
+	If Not IsArray(resArr) Then GoTo Endh	
+	If UBound(resArr) = 0 Then GoTo Endh
+	
+	SL_clearScript = Join(resArr, EOL)
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:SL_getHash:5:8
+' Library ScriptLibrary -> Function SL_getHash
+' String
+' DCS-Olympiev Apr 11, 2019
+' *********************************************************************************
+Function SL_getHash (strToHash) As String
+	On Error GoTo ErrH
+	
+	Dim HashFormula As String
+	Dim hashRes As Variant
+	
+	HashFormula = {@Right(@Left(@Password("} & strToHash & {"); ")"); "(")}
+	hashFormula = {@Password("} & Replace(strtoHash,{"},"") & {")}
+	hashRes = Evaluate(HashFormula)
+	SL_getHash = hashRes(0)
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$ & nLine & strToHash
+EndH:
+End Function

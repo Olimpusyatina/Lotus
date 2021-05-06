@@ -1,0 +1,218 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library SubRunner
+'Olimpus: Feb 21, 2020
+'********************************************
+Option Public
+Option Declare
+
+Use "DataBaseTools"
+Use "ExecuteLib"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Sub Initialize
+Declare Function SR_subRun(db As Variant, libName As String, subName As String, arguments As Variant) As Boolean
+Declare Public Function SR_getArgumentsString (arguments As Variant) As String
+Declare Private Sub SR_getTypedArgument(arguments As Variant, i As Integer)
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {SubRunner}
+
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:1:SR_subRun:6:8
+'********************************************
+'Function SR_subRun
+'Boolean
+'Olimpus: Feb 21, 2020
+'********************************************
+Function SR_subRun(db As Variant, libName As String, subName As String, arguments As Variant) As Boolean
+	On Error GoTo ErrH
+
+	Dim extDb As notesdatabase
+
+	If IsObject(Db) Then
+		If TypeName(db) <> "NOTESDATABASE" Then GoTo endH
+		Set extDb = db
+	ElseIf TypeName(db) = "STRING" Then
+		Set extDb = DBT_GetDbBySearchKey(CStr(db))
+	End If
+
+	Dim extDoc As NotesDocument
+	Set extDoc = extDb.Createdocument()
+	
+	Dim execString As String
+	Dim args As String
+	
+	args = SR_getArgumentsString(arguments)
+	
+	execString = |Option Public
+Option Declare
+Use "| & libName & |"
+
+Sub RunMe
+On Error Goto ErrH
+Const execfuncName = "Executing function | & subName & | from library | & libName & |"
+|
+	
+
+			execString = execString & |
+Call | & subName & |(| & args & |)|
+	
+	execString = execString & |
+
+Goto EndH
+ErrH:
+Error Err, execfuncName & ", c. " & CStr(ErL) & Chr(10) & Chr(13) & Error$
+	Resume EndH
+EndH:
+End Sub
+
+Call RunMe|
+	
+	Call extDoc.replaceItemValue("script",execString)
+	Call extDoc.save(True, False)
+	Dim agent As NotesAgent
+	Set agent = extDb.getAgent("(SubMaker)")
+	Call agent.run(extDoc.NoteId)
+
+	SR_subRun = True
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:1:SR_getArgumentsString:7:8
+' Library ExecuteLib -> Function getArgumentsString
+' String
+' На вызоде стринга для вставки в функцию
+' в теле заполнение всех глобальных входных параметров
+' DCS-Olympiev Oct 17, 2018
+' *********************************************************************************
+Public Function SR_getArgumentsString (arguments As Variant) As String
+	Const FuncName = {getArgumentsString}
+	On Error GoTo ErrH
+
+	If TYPENAME(arguments) = "STRING" Then
+		If arguments = "" Then  GoTo endH
+	End If
+	
+
+	Dim args As String
+	Dim i As Integer
+	Dim argsArr As Variant
+	
+	If IsArray(arguments) Then
+		ReDim executeArgument(LBound(arguments) To UBound(arguments))
+		argsArr = arguments
+	Else
+		ReDim executeArgument(0)
+		ReDim argsArr (0)
+		If IsObject(arguments) Then
+			Set argsArr(0) = arguments
+		Else
+			argsArr(0) = arguments			
+		End If
+
+	End If 
+	
+	For i = LBound(executeArgument) To UBound(executeArgument)
+		Call SR_getTypedArgument(argsArr(i), i)
+		args = args & "executeArgument(" & i & "), "
+	Next
+	args = StrLeftBack(args,",")
+	
+'	If IsObject(arguments) Then
+'		Set executeArgument = arguments
+'		args = "executeArgument"		
+'	ElseIf IsArray(arguments) Then
+''		executeArgument = arguments
+'		ReDim executeArgument(LBound(arguments) To UBound(arguments))
+'		For i = LBound(arguments) To UBound (arguments)
+'			Call getTypedArgument(arguments(i), i)
+''			If isObject(arguments(i)) Then
+''				Set executeArgument(i) = arguments(i)
+''			Else
+''				executeArgument(i) = arguments(i)
+''			End If
+'			args = args & "executeArgument(" & i & "), "
+'		Next
+'		args = StrLeftBack(args,",")
+'	ElseIf arguments <> "" Then
+'		ReDim executeArgument(0)
+'		Call getTypedArgument(arguments, 0)
+'		args = "executeArgument(0)"
+'	Else
+'		args = ""
+'	End If
+
+	SR_getArgumentsString = args
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & funcName & ", c. " & CStr(Erl) & nLine & Error$
+	Resume EndH
+EndH:
+End Function
+
+
+'++LotusScript Development Environment:2:2:SR_getTypedArgument:5:8
+' Library ExecuteLib -> Sub getTypedArgument
+' 
+' DCS-Olympiev Oct 17, 2018
+' *********************************************************************************
+Private Sub SR_getTypedArgument(arguments As Variant, i As Integer)
+	Const FuncName = {getTypedArgument}
+	On Error GoTo ErrH
+
+	Select Case DataType(arguments)
+		Case 2
+			executeArgument(i) = CInt(arguments)
+		Case 3
+			executeArgument(i) = CLng(arguments)
+		Case 4
+			executeArgument(i) = CSng(arguments)
+		Case 5
+			executeArgument(i) = CDbl(arguments)
+		Case 6
+			executeArgument(i) = CCur(arguments)
+		Case 7
+			executeArgument(i) = DateValue(arguments)
+		Case 8							
+			executeArgument(i) = CStr(arguments)
+		Case 11
+			executeArgument(i) = CBool(arguments)
+		Case 17
+			executeArgument(i) = CByte(arguments)
+		Case Else 
+			If IsObject(arguments) Then
+				Set executeArgument(i) = arguments
+			Else
+				executeArgument(i) = arguments
+			End If	
+	End Select
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & funcName & ", c. " & CStr(Erl) & nLine & Error$
+	Resume EndH
+EndH:
+End Sub

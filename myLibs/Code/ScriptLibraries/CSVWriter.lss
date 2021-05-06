@@ -1,0 +1,65 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library CSVWriter
+'Olimpus: 09.11.2020
+'********************************************
+Option Public
+Option Declare
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class CSVWriter 
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {CSVWriter}
+'********************************************
+'Class CSVWriter
+'Olimpus: 09.11.2020
+'********************************************
+Class CSVWriter 
+	Private filePath As String
+	
+	Sub New
+		On Error GoTo ErrH	
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	
+	'********************************************
+	'Function setFilePath
+	'Variant
+	'Olimpus: 09.11.2020
+	'********************************************
+	Function setFilePath(filePath As String) As Boolean
+	On Error GoTo ErrH
+
+	
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+

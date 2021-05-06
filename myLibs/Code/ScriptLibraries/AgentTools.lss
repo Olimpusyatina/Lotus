@@ -1,0 +1,55 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library AgentTools
+'Olimpus: Sep 16, 2020
+'********************************************
+Option Public
+Option Declare
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Sub Initialize
+Declare Sub AT_disableAgent(agentName As String) 
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {AgentTools}
+
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:2:AT_disableAgent:5:8
+'********************************************
+'Sub AT_disableAgent
+'Olimpus: Sep 16, 2020
+'********************************************
+Sub AT_disableAgent(agentName As String) 
+	On Error GoTo ErrH
+
+	Dim s As New notessession
+	Dim doc As NotesDocument
+	Dim agent As NotesAgent
+	
+	Set agent = s.Currentdatabase.Getagent("AgentStoper")
+	Set doc = s.Currentdatabase.Createdocument()
+	Call doc.Replaceitemvalue("agentName", agentName)
+'	Call doc.Save(True, False)
+	Call agent.Runwithdocumentcontext(doc)
+	
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Sub

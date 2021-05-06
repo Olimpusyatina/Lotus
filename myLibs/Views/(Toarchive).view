@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='utf-8'?>
+<note class='view' xmlns='http://www.lotus.com/dxl' version='11.0' maintenanceversion='1.0'
+ replicaid='432586CD00293F3C'>
+<noteinfo noteid='282' unid='6D35B5B221D37BAC432586CD002A4672' sequence='2'>
+<created><datetime>20210506T104145,46+03</datetime></created>
+<modified><datetime>20210506T105915,03+03</datetime></modified>
+<revised><datetime>20210506T105915,02+03</datetime></revised>
+<lastaccessed><datetime>20210506T105915,02+03</datetime></lastaccessed>
+<addedtofile><datetime>20210506T104145,46+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
+<wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
+<item name='$FormatNote' summary='true'>
+<rawitemdata type='4'>
+AQBF1W+G/LyEy9n6HQBXgiVD
+</rawitemdata></item>
+<item name='$FormulaClass' sign='true'><text>1</text></item>
+<item name='$TITLE' sign='true'><text>(Toarchive)</text></item>
+<item name='$Index' sign='true'><text/></item>
+<item name='$Formula' summary='true' sign='true'><formula compiled='true'>
+3AAFACwAJwAEAAcABwAJAAQAZGJUaXRsZVN1YmplY3QkQ29uZmxpY3QkUkVGAAQABAAAAHIABQAE
+AGZvcm0BAAcAU2V0dGluZwAKAgUACQAkQ29uZmxpY3QAWQEcAgUABwBkZWxldGVkAAEAAQAxAAsC
+HAIFAAYAQWN0aXZlAQABADEACgIcAgUADQBkdE5leHRBcmNoaXZlAEsBLQAKAhwCAwAHADgAMQAJ
+TDFTMlMzUzRTMkU1UzlTMTBTMTFTMTJTMTNTMTRTMTVTMTZTMTdTMThTMjJTMjNTAA==
+</formula></item>
+<item name='$FormulaTV'><text/></item>
+<item name='$Collation' summary='true'>
+<rawitemdata type='2'>
+FAABAABECGYHAAAHAGRiVGl0bGU=
+</rawitemdata></item>
+<item name='$ViewFormat' summary='true' sign='true'>
+<rawitemdata type='5'>
+AQACAAIACAAAAFZDAwQHABUAAAAAAFIAAQAACgABAAAAAAAAAAICAAAAVkMAAAcAIwAAAAAARgEB
+AAAKAAAAAAAAAAAAAgIAAABkYlRpdGxlBc0F4AXnBeIF4AXtBegF5SAFwQXEU3ViamVjdAXNBeAF
+5wXiBeAF7QXoBeUgBe0F4AXxBfIF8AXuBekF6gXoJgABAAAAAQEACQEAAAoBAQ4KAAABAK0rAQAB
+AAEAAAAAAAAAAABXQwEBAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAAAAAAAAAAAAAAAAAA
+V0MBAQAJAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAA//8AAAAAAAAAAAAAAAAAAEIAEAAAAAEA////
+AAUA////AAEAAAAAAAAAAAAAAAAAAQD///8AAQD///8AAAABAAAAAAABAAAAAAABAAAAAAAAAAgA
+AAAAAAEA
+</rawitemdata></item>
+<item name='$Comment' sign='true'><text/></item>
+<item name='$Flags'><text>PY</text></item>
+<item name='$DesignerVersion'><text>8.5.3</text></item>
+<item name='$V5ACTIONS' sign='true'>
+<rawitemdata type='1'>
+vRw/AAAAAQABAAAAAQAAAAAAAAAAAAAACAACAHn/bAABAPDw8AABAAAAAAAJAAAAAAABAPDw8AAA
+AB8AAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAPz/OgAAAAAAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAEAAAAAAAAAAAAAAAAAAAC+/2QAAAABAAIAnwEAACEAAAAAAAAABdEF7gXnBeQF4AXy
+BfwgBe0F4AXxBfIF8AXuBekF6gXzuywAAAAeAAIA6AMAAAAAAAABAAcAU2V0dGluZwDtAgMABwAM
+AAUACTBTMEUA
+</rawitemdata></item></note>
+

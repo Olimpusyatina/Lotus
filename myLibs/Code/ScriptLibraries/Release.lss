@@ -1,0 +1,157 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library Release
+'Olimpus: Jan 16, 2021
+'********************************************
+Option Public
+Option Declare
+
+Use "LogTools"
+Use "DBDesigner"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class Release
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+
+Private nLine As String
+Private Const designElem = {Release}
+'********************************************
+'Class Release
+'Olimpus: Apr 15, 2021
+'Description: Comments for Class
+'********************************************
+
+Class Release
+	Sub New (doc As notesdocument)
+		On Error GoTo ErrH
+
+
+
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+		Resume endH
+EndH:
+	End Sub
+'********************************************
+'Function getDevDb
+'Return NotesDatabase
+'Olimpus: Apr 15, 2021
+'********************************************
+Function getDevDb() As NotesDatabase
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+'********************************************
+'Function setDevDb
+'Return Boolean
+'Olimpus: Apr 15, 2021
+'********************************************
+Function setDevDb (db As notesdatabase) As Boolean
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+'********************************************
+'Function setProdDb
+'Return Boolean
+'Olimpus: Apr 15, 2021
+'********************************************
+Function setProdDb (db As notesdatabase) As Boolean
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+'********************************************
+'Function setForm
+'Return Boolean
+'Olimpus: Apr 15, 2021
+'********************************************
+Function setForm (forms As Variant) As Boolean
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+'********************************************
+'Function setViews
+'Return Boolean
+'Olimpus: Apr 15, 2021
+'********************************************
+Function setViews (views As Variant) As Boolean
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+'********************************************
+'Function setAgents
+'Return Boolean
+'Olimpus: Apr 15, 2021
+'********************************************
+Function setAgents (agents As Variant) As Boolean
+	On Error GoTo ErrH
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+End Function
+
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+

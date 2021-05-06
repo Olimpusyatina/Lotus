@@ -1,0 +1,301 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library Moniker
+'Olimpus: 23.11.2020
+'********************************************
+Option Public
+Option Declare
+Use "Collections"
+Use "OutputLib"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class Moniker As Interface
+Declare Class Process As Interface
+Declare Sub Initialize
+Declare Function getValue(obj As Variant, methodName As String) As Variant
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {Moniker}
+'********************************************
+'Class Moniker
+'Olimpus: 23.11.2020
+'********************************************
+Class Moniker As Interface
+	Private moniker As Variant
+	Private strSpace As String
+	Private computerName As String
+	Private processes As ObjectCollection
+	Sub New ()
+		On Error GoTo ErrH
+	
+		
+		
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Function getAllProcesses
+	'Variant
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function getAllProcesses(computerName As String) As ObjectCollection
+	On Error GoTo ErrH
+		
+'		If computerName <> Me.computerName Then			
+			If computerName = "" Or computerName = "localhost" Or computerName = "127.0.0.1" Then
+				Me.computerName = "."
+			Else
+				Me.computerName = computerName	
+			End If
+			
+			
+			Set moniker = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & Me.computerName & "\root\cimv2")
+			strSpace = String(20, " ")
+'		End If
+		Dim processeV As Variant
+		Dim process As Process
+		
+		Set processeV = moniker.ExecQuery("Select * from Win32_Process")
+		Set processes = New ObjectCollection
+		ForAll proc In processeV
+				Set process = New Process(proc)
+				Call processes.addObject(process)
+		End ForAll
+		
+		Set getAllProcesses = processes
+		
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function deleteProcess
+	'Boolean
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function deleteProcess(procName As String) As Boolean
+	On Error GoTo ErrH
+
+		Dim processes As Variant
+		Set processes = moniker.ExecQuery("Select * from Win32_Process")
+		
+		ForAll proc In processes
+			If proc.name = procName Then
+				proc.terminate
+			End If
+		End ForAll
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+End Class
+
+'********************************************
+'Class Process
+'Olimpus: 23.11.2020
+'********************************************
+Class Process As Interface
+	Private process As Variant	
+	Sub New (process As Variant)
+		On Error GoTo ErrH
+
+		Set Me.process = process
+	
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Function getKey
+	'String
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function getKey() As String
+	On Error GoTo ErrH
+
+	getKey = processId()
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function processId
+	'String
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function processId() As String
+	On Error GoTo ErrH
+
+		processId = process.processId
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function CreationClassName
+	'String
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function CreationClassName() As String
+	On Error GoTo ErrH
+
+		CreationClassName = process.CreationClassName	
+		
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function getName
+	'String
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function getName() As String
+	On Error GoTo ErrH
+
+	getName = process.Name
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function sessionID
+	'String
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function sessionID As String
+	On Error GoTo ErrH
+
+		sessionID = process.sessionID
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function status
+	'String
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function status As String
+	On Error GoTo ErrH
+	
+		If IsNull(process.status) Then
+			status = "null"
+		Else
+			status = process.status		
+		End If
+		 
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function getProcess
+	'Variant
+	'Olimpus: 23.11.2020
+	'********************************************
+	Function getProcess() As Variant
+	On Error GoTo ErrH
+
+	Set getProcess = process
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+
+'++LotusScript Development Environment:2:1:getValue:6:8
+'********************************************
+'Function getValue
+'String
+'Olimpus: 23.11.2020
+'********************************************
+Function getValue(obj As Variant, methodName As String) As Variant
+	On Error GoTo ErrH
+
+	Dim exString As String
+	global_interface_return_value = ""
+	Set global_interface_input_value = obj
+	exString = |
+				Sub exeSub
+				On Error Resume next
+					if isObject(global_interface_input_value.|  & methodName & |) then
+msgbox "isObject"
+						set global_interface_return_value = global_interface_input_value.|  & methodName & |
+					elseif not isNull(global_interface_input_value.|  & methodName & |) then
+msgbox "not is null"							
+						global_interface_return_value = global_interface_input_value.|  & methodName & |
+					else
+msgbox "other"
+						global_interface_input_value.|  & methodName & |
+						global_interface_return_value = "Null"
+					End if
+				On Error goto ErrH
+				goto EndH
+		ErrH:
+			Error Err, GetThreadInfo(1) & ", c. " & CStr(Erl) &  Error$
+		EndH:
+				End Sub
+		Call exeSub()
+				|
+MsgBoxtxt exString
+	Execute(exString)
+	If IsObject(global_interface_return_value) Then
+	Set getValue = global_interface_return_value
+Else
+	getValue = global_interface_return_value
+End If
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+End Function
+

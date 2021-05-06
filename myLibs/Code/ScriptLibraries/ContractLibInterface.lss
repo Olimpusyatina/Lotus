@@ -1,0 +1,1318 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+Option Public
+Option Declare
+
+Use "DataBaseTools"
+Use "ManagementStructureTools"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Sub Initialize
+Declare Sub CON_DelExtFirm(Param As NotesDocument, nSide As Integer)
+Declare Function CON_SendResidentNadomProlong(param As NotesDocument) As Boolean
+Declare Function CON_GetSetting(SettingName As String) As NotesDocument
+Declare Function CON_GetAllChildDocs(ParentDoc As NotesDocument) As NotesDocumentCollection
+Declare Function CON_SetRegNumber(param As NotesDocument, regNum As Boolean) As boolean
+Declare Sub CON_InitAccessFieldsList(ParentDoc As NotesDocument)
+Declare Function CON_NeedReplaceParent(ParentDoc As NotesDocument, param As NotesDocument) As Boolean
+Declare Function CON_MoneyToWord(Money As Double) As String
+Declare Sub CON_InitContractLib()
+Declare Sub CON_OpenTemplateAttachment(param As NotesDocument)
+Declare Function CON_GetContractDb() As NotesDatabase
+Declare Function CON_CheckInterCompany (currdoc As NotesDocument) As Boolean
+Declare Sub CON_AddExtFirm(Param As NotesDocument, nSide As Integer)
+Declare Function CON_GetGarantLetterTemplate(Company As String) As NotesDocument
+Declare Function CON_CheckVendorStatus(param As NotesDocument) As Boolean
+Declare Sub CON_CreateExplaneNote(Param As NotesDocument)
+Declare Sub CON_SetAccessFromParent(Source As NotesDocument, Destination As NotesDocument)
+Declare Sub CON_FillGarantLetter(param As NotesDocument, FileName As String)
+Declare Function CON_GetDocumentByUNID(UNID As String) As NotesDocument
+Declare Function CON_SetNadomNeedSend(param As NotesDocument) As Boolean
+Declare Sub CON_RecalcChildAccess(ParentDoc As NotesDocument)
+Declare Sub CON_SetContractDb(db As NotesDatabase)
+Declare Function CON_GetParentDocument(Param As Variant) As NotesDocument
+Declare Sub CON_FillIntFirmFields(Param As NotesDocument)
+Declare Sub CON_CopyParentsDataFields(Source As NotesDocument, Destination As NotesDocument)
+Declare Function CON_SendResidentNadom(param As NotesDocument) As Boolean
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const libName = {("ContractLib")}
+Private Const CONTRACT_DBKEY = {CONTRACTS}
+Private Const CONTRACT_SETTINGS = {Settings}
+
+Private Const CONTRACT_NUMBER_VIEWNAME = {DocNumbers}
+Private Const CONTRACT_REGNUMBER_VIEWNAME = {RegDocNumbers}
+Private Const CONTRACT_OPENTEMPLATE_AGENTNAME = {OpenTemplateAttachment}
+Const CONTRACT_ADDITIONS_VIEWNAME = {InterConnectAddition}
+Const CONTRACT_ENCLOSURE_VIEWNAME = {InterConnectEnclosure}
+Const CONTRACT_CHILDDOCS_VIEWNAME = {InterConnectDocuments}
+Const CONTRACT_CHILDDOC_FORMNAME = {InterConnectDocPreview}
+Const CONTRACT_PAYCONDITIONS_VIEWNAME = {PayConditions}
+Const CONTRACT_AGRTEMPLATES_VIEWNAME = {AgreementTemplates}
+Const CONTRACT_AGRMAINDOCCHOICE_VIEWNAME = {MainDocChoice}
+Const CONTRACT_BYUNID_VIEWNAME = {ByUNID}
+Const CONTRACT_BYVENDORUNID_VIEWNAME = {AgrementListByVendor}
+Const CONTRACT_AUTOSELECTDOC_BYNAME_VIEWNAME = {AutoSelectDocs}
+Const CONTRACT_AUTOSELECTDOC_BYUNID_VIEWNAME = {AutoSelectDocsUNID}
+
+Const CONTRACT_PAYCONDITIONS_FORMNAME = {dlgCondPay}
+
+Const CONTRACT_DRAFT_STATUSNUMBER = {0}
+Const CONTRACT_DRAFT_STATUSTEXT = {Черновик}
+Const CONTRACT_DISCUSS_STATUSTEXT = {Обсуждение}
+Const CONTRACT_DISCUSS_STATUSNUMBER = {200}
+Const CONTRACT_VISING_STATUSTEXT = {На согласовании}
+Const CONTRACT_VISING_STATUSNUMBER= {300}
+Const CONTRACT_AGREE_STATUSTEXT = {Согласован}
+Const CONTRACT_AGREE_STATUSNUMBER= {400}
+Const CONTRACT_ACTIVE_STATUSTEXT = {Действует}
+Const CONTRACT_ACTIVE_STATUSNUMBER= {500}
+Const CONTRACT_CANCELED_STATUSTEXT = {Расторгнут}
+Const CONTRACT_CANCELED_STATUSNUMBER= {600}
+Const CONTRACT_CLOSED_STATUSTEXT = {Закрыт}
+Const CONTRACT_CLOSED_STATUSNUMBER= {900}
+Const CONTRACT_PRVERSION_STATUSTEXT = {Предыдущая версия}
+Const CONTRACT_PRVERSION_STATUSNUMBER= {800}
+
+Const FIELD_STATUSNUMBER = {StatusNumber}
+Const FIELD_STATUSTEXT = {StatusText}
+Const FIELD_TIMESTATUS = {TimeMoveToStatus}
+
+Private AccessAuthorsFieldsList List As Variant
+Private AccessReadersFieldsList List As Variant
+
+Dim ContractDb As NotesDatabase
+Dim UnidView As NotesView
+Dim ChildView As NotesView
+Dim ReplaceItems List As Variant
+Dim ViewByUNID As string
+Dim padj As String
+Private nLine As String
+Private initLib As Integer
+
+'++LotusScript Development Environment:2:2:Initialize:1:10
+Sub Initialize
+	Call CON_InitContractLib()
+End Sub
+
+
+'++LotusScript Development Environment:2:2:CON_DelExtFirm:1:8
+Sub CON_DelExtFirm(Param As NotesDocument, nSide As Integer)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_DelExtFirm"}
+	Dim ErrStr As String
+	
+	Dim fDoc As NotesDocument
+	Dim extUNID As Variant
+	Dim extFirm As Variant
+	Dim extSobst As Variant
+	Dim extMan As Variant
+	Dim extINN As Variant
+	Dim extAccount As Variant
+	Dim extBIK As Variant
+	Dim extBank As Variant
+	Dim extLegalAddress As Variant
+	Dim extFactAddres As Variant
+	Dim extCategoryUL As Variant 
+	Dim extJob As Variant 
+	Dim vnArray As Variant
+	Dim dynamicScript As String
+	
+	vnArray = ArrayInit(param.Getitemvalue("Vendors"))
+	extUNID = ArrayInit(Param.GetItemValue("ExtFirmUNID"))
+	extFirm = ArrayInit(Param.GetItemValue("ExtFirm"))
+	extSobst = ArrayInit(Param.GetItemValue("ExtSobstv"))
+	extMan = ArrayInit(Param.GetItemValue("extMan"))
+	extINN = ArrayInit(Param.GetItemValue("extINN"))
+	extAccount = ArrayInit(Param.GetItemValue("extAccount"))
+	extBIK = ArrayInit(Param.GetItemValue("extBIK"))
+	extBank = ArrayInit(Param.GetItemValue("extBank"))
+	extLegalAddress = ArrayInit(Param.GetItemValue("ExtLegalAddres"))
+	extFactAddres = ArrayInit(Param.GetItemValue("extFactAddres"))
+	extCategoryUL = ArrayInit(Param.GetItemValue("extCategoryUL"))
+	extJob = ArrayInit(Param.GetItemValue("extJob"))
+	
+	If UBound(extUNID) = 0 And nSide = 2 Then
+		extUNID = ArrayAppendElement(extUNID,"-")
+		extFirm = ArrayAppendElement(extFirm,"-")
+		extSobst = ArrayAppendElement(extSobst,"-")
+		extMan = ArrayAppendElement(extMan,"-")
+		extINN = ArrayAppendElement(extINN,"-")
+		extAccount = ArrayAppendElement(extAccount,"-")
+		extBIK = ArrayAppendElement(extBIK,"-")
+		extBank = ArrayAppendElement(extBank,"-")
+		extLegalAddress = ArrayAppendElement(extLegalAddress,"-")
+		extFactAddres = ArrayAppendElement(extFactAddres,"-")
+		extCategoryUL = ArrayAppendElement(extCategoryUL,"-")
+		extJob = ArrayAppendElement(extJob,"-")
+	End If
+	
+	If extUNID(nSide - 1) = "-" Then GoTo endh
+	
+	vnArray(nSide) = "-"
+	extUNID(nSide - 1) = "-"
+	extFirm(nSide - 1) = "-"
+	extSobst(nSide - 1) = "-"
+	extMan(nSide - 1) = "-"
+	extINN(nSide - 1) = "-"
+	extAccount(nSide - 1) = "-"
+	extBIK(nSide - 1) = "-"
+	extBank(nSide - 1) = "-"
+	extLegalAddress(nSide - 1) = "-"
+	extFactAddres(nSide - 1) = "-"
+	extCategoryUL(nSide - 1) = "-"
+	extJob(nSide - 1) = "-"
+	
+	If UBound(extLegalAddress) < UBound(extCategoryUL) Then
+		ReDim extLegalAddress (0 To 1) As Variant
+		extLegalAddress(0) = "-"
+		extLegalAddress(1) = "-"
+	End If
+
+	Call Param.ReplaceItemValue("Vendors",vnArray)	
+	Call Param.ReplaceItemValue("ExtFirmUNID",extUNID)
+	Call Param.ReplaceItemValue("ExtFirm",extFirm)
+	Call Param.ReplaceItemValue("ExtSobstv",extSobst)
+	Call Param.ReplaceItemValue("ExtMan",extMan)
+	Call Param.ReplaceItemValue("ExtINN",extINN)
+	' Р/с ~ К/с
+	Call Param.ReplaceItemValue("ExtAccount",extAccount)
+	Call Param.ReplaceItemValue("ExtBIK",extBIK)
+	Call Param.ReplaceItemValue("ExtBank",extBank)
+	Call Param.ReplaceItemValue("ExtLegalAddres",extLegalAddress)
+	Call Param.ReplaceItemValue("ExtFactAddres",extFactAddres)
+	Call Param.ReplaceItemValue("ExtCategoryUL",extCategoryUL)
+	Call Param.ReplaceItemValue("extJob",extJob)
+	Call Param.ReplaceItemValue("Scala","")
+	Call Param.ReplaceItemValue("Poligraph","")
+	
+	' Olimpus 10/2017 <<
+	Dim vendorArr As Variant
+	Dim i As Integer
+	Dim DoubleEdged As String
+	vendorArr = DBT_GetSettingDocByDb(DBT_GetDBBySearchKEY("ДОГОВОРЫ_DCS"),"DCS_LIST",False).GetItemValue("Value")
+	ForAll vendor In vnArray
+		For  i = 0 To UBound(VendorArr) 
+			If vendor = VendorArr(i) Then
+				DoubleEdged = "1"
+				Exit ForAll
+			End If
+		Next
+	End ForAll
+	Call Param.ReplaceItemValue("DoubleEdged", DoubleEdged)
+	' Olimpus >>
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:CON_SendResidentNadomProlong:1:8
+Function CON_SendResidentNadomProlong(param As NotesDocument) As Boolean
+	On Error GoTo handler
+	Const FuncName = {Function "CON_SendResidentNadom" }
+	Dim ErrStr As String
+
+	Dim s As New NotesSession
+	Dim mailDb As NotesDatabase
+	Dim mailDoc As NotesDocument
+	Dim sDoc As NotesDocument
+	Dim rtItem As NotesRichTextItem
+	Dim srtItem As NotesRichTextItem
+
+	Set mailDb = DBT_GetMailBox()
+
+	If mailDb Is Nothing Then
+		Set mailDb = s.getdatabase(param.parentDatabase.server,{mail1.box},False)
+		If mailDb Is Nothing Then Error 5001, {Почтовый роутер не найден.}
+		If Not mailDb.isopen() Then Error 5002, {Почтовый роутер недоступен.}
+	Else
+		If Not mailDb.isopen() Then Error 5002, {Почтовый роутер недоступен.}
+	End If
+
+	Set mailDoc = mailDb.Createdocument()
+
+	Call mailDoc.Replaceitemvalue("Form", "Memo")
+	Call mailDoc.Replaceitemvalue("Principal", param.Parentdatabase.title)
+	Call mailDoc.Replaceitemvalue("From", {mail robot/PROMP/RU})
+	Call mailDoc.Replaceitemvalue("PostedDate", Now())
+	Call mailDoc.Replaceitemvalue("Subject", {Договорные документы требуют продления.})
+	Call mailDOc.Replaceitemvalue("SendTo", param.Getitemvalue("CreatorLN"))
+	Call mailDOc.Replaceitemvalue("Recipients", param.Getitemvalue("CreatorLN"))
+
+	Set sDoc = CON_GetSetting("50USDNadomMailProlong")
+
+	Set rtItem = mailDoc.Createrichtextitem("Body")
+	Set srtItem = sDoc.Getfirstitem("ToFile")
+	Call rtItem.Appendrtitem(srtItem)
+
+	Call rtItem.Addnewline(1)
+	Call rtItem.Appendtext({Ссылка на документ => })
+	Call rtItem.Appenddoclink(param, "")
+	Call mailDoc.Save(True, False)
+
+	CON_SendResidentNadomProlong = True
+
+	GoTo Endh
+handler:
+	ErrStr = libName & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err,ErrStr
+Endh:
+End Function
+
+'++LotusScript Development Environment:2:1:CON_GetSetting:1:8
+Function CON_GetSetting(SettingName As String) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "CON_GetSetting"}
+	Dim ErrStr As String
+	
+	Dim sDoc As NotesDocument
+	Dim sView As NotesView
+	
+	Set CON_GetSetting  = Nothing
+	
+	Set sView = CON_GetContractDb().GetView(CONTRACT_SETTINGS)
+	
+	Set sDoc = sView.GetDocumentByKey(SettingName,True)
+	If sDoc Is Nothing Then Error 5005, "Не найдена настройка: "  & SettingName
+	
+	Set CON_GetSetting = sDoc
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:CON_GetAllChildDocs:1:8
+Function CON_GetAllChildDocs(ParentDoc As NotesDocument) As NotesDocumentCollection
+	On Error GoTo handler
+	Const FuncName = {Function "CON_GetAllChildDocs"}
+	Dim ErrStr As String
+	
+	Dim childDc As NotesDocumentCollection
+		
+	If ChildView Is Nothing Then Set ChildView = CON_GetContractDb().Getview(CONTRACT_CHILDDOCS_VIEWNAME)
+	If ChildView Is Nothing Then Error 5004, {Не найдено служебное представление: } & CONTRACT_CHILDDOCS_VIEWNAME
+	
+	Set childDc = ChildView.Getalldocumentsbykey(ParentDoc.Getitemvalue("UNID")(0), True)
+	Set CON_GetAllChildDocs = childDc
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:CON_SetRegNumber:1:8
+Function CON_SetRegNumber(param As NotesDocument, regNum As Boolean) As boolean
+	On Error GoTo handler
+	Const FuncName = {Function "CON_SetRegNumber"}
+	Dim ErrStr As String
+	
+	Dim regView As NotesView
+	Dim regDoc As NotesDocument
+	Dim skey As String
+	Dim maskNumber As String
+	Dim templ As String
+	Dim regNumber As String
+	Dim isNotSaveConflict As Boolean
+	Dim DocNumber As Integer
+	
+	If not regNum then 
+		Set regView = CON_GetContractDb().Getview(CONTRACT_NUMBER_VIEWNAME)
+	Else
+		Set regView = CON_GetContractDb().Getview(CONTRACT_REGNUMBER_VIEWNAME)
+	End If
+	
+	If regView Is Nothing Then Error 5007, {Не найдено служебное представление: } & CONTRACT_REGNUMBER_VIEWNAME
+	
+	skey = param.Getitemvalue("FirmAbbr")(0) & {/} & Right("" & Year(today),2)
+	
+	Set regDoc = regView.Getdocumentbykey(skey,True)
+	
+	If regDoc Is Nothing Then
+		MsgBox "Не найден документ регистрационных номеров.",16,CON_GetContractDb().Title
+		GoTo endh
+	End If
+	
+	Do
+		Set regDoc = regView.Getdocumentbykey(skey,True)
+		' Резервируем номер
+		DocNumber = CInt(regDoc.Getitemvalue("DocNumber")(0))  + 1
+		Call regDoc.Replaceitemvalue("DocNumber", DocNumber)
+		'Пытаемся записать
+		isNotSaveConflict = regDoc.Save( False, False )
+	Loop Until isNotSaveConflict
+	
+	regNumber = ""
+	' формируем регномер
+	
+	templ = regDoc.Getitemvalue("TemplateNum")(0)
+	maskNumber = regDoc.Getitemvalue("maskNum")(0)
+	Select Case UCase(templ)
+		Case "CNY":
+			regNumber = regDoc.Getitemvalue("CompanyShort")(0) & regDoc.getitemvalue("DelimComp")(0)
+			If Len(maskNumber) > 0 Then
+				regNumber = regNumber & Right(maskNumber & DocNumber,Len(maskNumber)) & regDoc.getitemvalue("DelimNum")(0)
+			Else
+				regNumber = regNumber & DocNumber & regDoc.getitemvalue("DelimNum")(0)
+			End If 
+			If regDoc.Getitemvalue("NeedYear")(0) = "1" Then
+				regNumber = regNumber & Year(Today) & regDoc.Getitemvalue("DelimYear")(0)
+			Else
+				regNumber = regNumber & Right(Year(Today),2) & regDoc.Getitemvalue("DelimYear")(0)
+			End If
+		Case "CYN":
+			regNumber = regDoc.Getitemvalue("CompanyShort")(0) & regDoc.getitemvalue("DelimComp")(0)
+			If regDoc.Getitemvalue("NeedYear")(0) = "1" Then
+				regNumber = regNumber & Year(Today) & regDoc.Getitemvalue("DelimYear")(0)
+			Else
+				regNumber = regNumber & Right(Year(Today),2) & regDoc.Getitemvalue("DelimYear")(0)
+			End If
+			If Len(maskNumber) > 0 Then
+				regNumber = regNumber & Right(maskNumber & DocNumber,Len(maskNumber)) & regDoc.getitemvalue("DelimNum")(0)
+			Else
+				regNumber = regNumber & DocNumber & regDoc.getitemvalue("DelimNum")(0)
+			End If 
+		Case "YNC":
+			If regDoc.Getitemvalue("NeedYear")(0) = "1" Then
+				regNumber = Year(Today) & regDoc.Getitemvalue("DelimYear")(0)
+			Else
+				regNumber = Right(Year(Today),2) & regDoc.Getitemvalue("DelimYear")(0)
+			End If
+			If Len(maskNumber) > 0 Then
+				regNumber = regNumber & Right(maskNumber & DocNumber,Len(maskNumber)) & regDoc.getitemvalue("DelimNum")(0)
+			Else
+				regNumber = regNumber & DocNumber & regDoc.getitemvalue("DelimNum")(0)
+			End If 
+			regNumber = regNumber
+			regNumber = regNumber & regDoc.Getitemvalue("CompanyShort")(0) & regDoc.getitemvalue("DelimComp")(0)			
+		Case "CN":
+			regNumber = regDoc.Getitemvalue("CompanyShort")(0) & regDoc.getitemvalue("DelimComp")(0)
+			If Len(maskNumber) > 0 Then
+				regNumber = regNumber & Right(maskNumber & DocNumber,Len(maskNumber)) & regDoc.getitemvalue("DelimNum")(0)
+			Else
+				regNumber = regNumber & DocNumber & regDoc.getitemvalue("DelimNum")(0)
+			End If 
+		Case Else:
+			
+	End Select
+	
+	If Not regNum Then
+		Call param.Replaceitemvalue("ExternalNumber", regNumber)
+	Else
+		Call param.Replaceitemvalue("InternalNumber", regNumber)
+	End if
+	
+	CON_SetRegNumber = True
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+
+'++LotusScript Development Environment:2:2:CON_InitAccessFieldsList:1:8
+Sub CON_InitAccessFieldsList(ParentDoc As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_InitAccessFieldsList"}
+	Dim ErrStr As String
+	
+	Dim sDoc As NotesDocument
+	Dim ArrAccList As Variant
+	
+	AccessAuthorsFieldsList("ParentDocAuthors")=""
+	AccessReadersFieldsList("ParentDocReaders")=""
+	
+	Set sDoc = CON_GetSetting("ParentAuthorsFields")
+
+	ArrAccList = ArrayInit("")
+	ForAll x In sDoc.Getitemvalue("Value")
+		ArrAccList = ArrayAppendArray(ArrAccList,ParentDoc.Getitemvalue(x))
+	End ForAll
+	ArrAccList = FullTrim(ArrayUnique(ArrAccList))
+	AccessAuthorsFieldsList("ParentDocAuthors") = ArrAccList
+
+	
+	Set sDoc = CON_GetSetting("ParentReadersFields")
+
+	ArrAccList = ArrayInit("")
+	ForAll x In sDoc.Getitemvalue("Value")
+		ArrAccList = ArrayAppendArray(ArrAccList,ParentDoc.Getitemvalue(x))
+	End ForAll
+	ArrAccList = FullTrim(ArrayUnique(ArrAccList))
+	AccessReadersFieldsList("ParentDocReaders") = ArrAccList
+
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:CON_NeedReplaceParent:1:8
+Function CON_NeedReplaceParent(ParentDoc As NotesDocument, param As NotesDocument) As Boolean
+	On Error GoTo handler
+	Const FuncName = {Function "CON_NeedReplaceParent"}
+	Dim ErrStr As String
+	
+	If ParentDoc Is Nothing Then GoTo endh
+	
+	CON_NeedReplaceParent = False
+	
+	If param.Getitemvalue("AddType")(0) <> "0" Then GoTo endh
+	
+	ReplaceItems("СчетаВнешний") = "ExtAccount"
+	ReplaceItems("НазваниеВнешний") = "ExtFirm"
+	ReplaceItems("ПодписанВнешний") = "ExtMan"
+	ReplaceItems("СчетаВнутренний") = "IntAccount"
+	ReplaceItems("НазваниеВнутренний") = "IntFirm"
+	ReplaceItems("ПодписантВнутренний") = "IntMan"
+		
+	ForAll x In ReplaceItems
+		If ParentDoc.Getitemvalue(x)(0) <> param.Getitemvalue(x)(0) Then
+			CON_NeedReplaceParent = True
+			GoTo endh
+		End If
+	End ForAll
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:CON_MoneyToWord:1:8
+Function CON_MoneyToWord(Money As Double) As String
+	On Error GoTo handler
+	Const FuncName = {Function "CON_MoneyToWord"}
+	Dim ErrStr As String
+	
+	Dim NumEd (1 To 19) As  String
+	Dim NumEd1(1 To 2) As   String
+	Dim NumDec (2 To 9) As String 
+	Dim NumSot (1 To 9) As String
+	Dim Xlion0  (1 To 3) As String 
+	Dim Xlion1 (1 To 3) As String 
+	Dim Xlion2 (1 To 3) As String
+	Dim Money3 As long, MoneyI As long, MoneyK As integer, Digit As Integer, LastDigit As Integer, T As Integer
+	Dim Sto As String, Kop As String, Result As String
+	
+	NumEd(1) = "один "
+	NumEd(2) = "два "
+	NumEd(3) = "три "
+	NumEd(4) = "четыре "
+	NumEd(5) = "пять "
+	NumEd(6) = "шесть "
+	NumEd(7) = "семь "
+	NumEd(8) = "восемь "
+	NumEd(9) = "девять "
+	NumEd(10) = "десять "
+	NumEd(11) = "одиннадцать "
+	NumEd(12) = "двенадцать "
+	NumEd(13) = "тринадцать "
+	NumEd(14) = "четырнадцать "
+	NumEd(15) = "пятнадцать "
+	NumEd(16) = "шестадцать "
+	NumEd(17) = "семнадцать "
+	NumEd(18) = "восемнадцать "
+	NumEd(19) = "девятнадцать "
+	
+	NumEd1(1) = "одна "
+	NumEd1(2) = "две "
+	
+	NumDec (2) = "двадцать "
+	NumDec (3) = "тридцать "
+	NumDec (4) = "сорок "
+	NumDec (5) = "пятьдесят "
+	NumDec (6) = "шестьдесят "
+	NumDec (7) = "семьдесят "
+	NumDec (8) = "восемьдесят "
+	NumDec (9) = "девяносто "	
+	
+	NumSot(1) = "сто "
+	NumSot(2) = "двести "
+	NumSot(3) = "триста "
+	NumSot(4) = "четыреста "
+	NumSot(5) = "пятьсот "
+	NumSot(6) = "шестьсот "
+	NumSot(7) = "семьсот "
+	NumSot(8) = "восемьсот "
+	NumSot(9) = "девятьсот "
+	
+	XLion0(1) = "тысяч "
+	XLion0(2) = "миллионов "
+	XLion0(3) = "миллиардов "
+	
+	XLion1(1) = "тысяча "
+	XLion1(2) = "миллион "
+	XLion1(3) = "миллиард "
+	
+	XLion2(1) = "тысячи "
+	XLion2(2) = "миллиона "
+	XLion2(3) = "миллиарда"
+	
+	MoneyI = Money
+	MoneyK = Round((Money - MoneyI) * 100, 0)
+		
+		T = 0
+		
+		While MoneyI > 0
+			Money3 = MoneyI Mod 1000
+			MoneyI = Int(MoneyI / 1000)
+			Sto = ""
+			
+			If (Money3 Mod 100) < 20 Then
+				LastDigit = (Money3 Mod 20)
+				If LastDigit > 0 Then
+					If (T = 1) And (LastDigit =1 Or LastDigit =2) Then 
+						Sto = NumEd1(LastDigit)
+					Else 
+						Sto = NumEd(LastDigit)
+					End If
+				End If
+				Money3 = Int(Money3 /100)
+			Else 
+				LastDigit = Money3 Mod 10
+				If LastDigit > 0 Then
+					If (T = 1) And (LastDigit  =1 Or LastDigit  =2) Then 
+						Sto = NumEd1(LastDigit)
+					Else 
+						Sto = NumEd(LastDigit)
+					End If
+				End If
+				Money3 = Int(Money3 / 10)
+				Digit = Money3 Mod 10
+				If Digit > 0 Then 
+					Sto = NumDec(Digit) + Sto
+				End If
+				Money3 = Int(Money3 / 10)
+			End If
+			
+			If Money3 > 0 Then
+				Sto = NumSot(Money3) + Sto
+			End If			
+			
+			If T > 0 Then 
+				If LastDigit = 1 Then 
+					Sto = Sto + Xlion1(T)
+				Else 
+					If (LastDigit >= 2 And LastDigit<= 4) Then 
+						Sto = Sto + Xlion2(T)
+					Else 
+						Sto = Sto + Xlion0(T)
+					End If
+				End If
+			End If
+			T = T + 1
+			
+			Result = Sto + Result	
+		Wend
+		
+		Kop =CStr(MoneyK Mod 10)
+		
+		MoneyK = MoneyK / 10
+		
+		Kop = CStr(MoneyK) + Kop
+		
+		Result = Result + "руб. " + Kop + " коп."
+		
+	CON_MoneyToWord = result
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:2:CON_InitContractLib:1:8
+Sub CON_InitContractLib()
+	
+	If initLib <> 1 Then
+		Call CON_GetContractDb()
+		initLib = 1
+		nLine = Chr(10) & Chr(13)
+		ViewByUNID = CON_GetContractDb().Getview(CONTRACT_BYUNID_VIEWNAME).Universalid
+	End If
+	
+End Sub
+
+'++LotusScript Development Environment:2:2:CON_OpenTemplateAttachment:1:8
+Sub CON_OpenTemplateAttachment(param As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_OpenTemplateAttachment"}
+	Dim ErrStr As String
+	
+	Dim agent As NotesAgent
+
+	Set agent = CON_GetContractDb().Getagent(CONTRACT_OPENTEMPLATE_AGENTNAME)
+	If agent Is Nothing Then Error 5005, {Не найден исполняемый скрипт: } & CONTRACT_OPENTEMPLATE_AGENTNAME
+	
+	Call agent.Run(param.Noteid)
+
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:CON_GetContractDb:1:8
+Function CON_GetContractDb() As NotesDatabase
+	On Error GoTo handler
+	Const FuncName = {Function "CON_GetContractDb"}
+	Dim ErrStr As String
+	
+	If Not ContractDb Is Nothing Then
+		Set CON_GetContractDb = ContractDb
+		Exit Function
+	End If
+	
+	Set ContractDb = DBT_GetDbBySearchKey(CONTRACT_DBKEY) 
+	If ContractDb Is Nothing Then Error 5001, "Не найден список договоров."
+	If Not ContractDb.Isopen Then Error 5002, "Список договоров недоступен."
+	
+	Set CON_GetContractDb = ContractDb
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:CON_CheckInterCompany:1:8
+Function CON_CheckInterCompany (currdoc As NotesDocument) As Boolean
+	On Error GoTo ErrH
+	Const FuncName = {CON_CheckInterCompany}
+
+	Dim settingDOc As NotesDocument
+	Dim db As NotesDatabase
+	Dim i As Integer
+	
+	i = UBound(currdoc.Getitemvalue("vendors"))+1
+	
+	Set db = DBT_GetDbBySearchKey("ДОГОВОРЫ_DCS")
+	Set settingDoc = DBT_GetSettingDocByDb(db,"DCS_LIST",False)
+	ForAll vendor In currdoc.Getitemvalue("vendors")
+		If ArrayGetIndex(settingdoc.Getitemvalue("Value"),UCase(vendor)) >= 0 Then
+			i = i - 1			
+		End If
+	End ForAll
+	
+	If i = 0  Or i = (UBound(currdoc.Getitemvalue("vendors"))+1) Then GoTo endh
+	
+	Set db = DBT_GetDbBySearchKey("ДОГОВОРЫ")
+	Set settingDoc = DBT_GetSettingDocByDb(db,"OGR_LIST",False)
+	ForAll vendor In currdoc.Getitemvalue("vendors")
+		If ArrayGetIndex(settingdoc.Getitemvalue("Value"),UCase(vendor)) >= 0 Then
+			i = i - 1			
+		End If
+	End ForAll
+	
+	If i = 0 Then CON_CheckInterCompany = True
+	
+	GoTo EndH
+ErrH:
+	Error Err, FuncName & ": " & Err &", в стр " & Erl & Chr(10) & Chr(13) & Error$
+	Resume EndH
+endh:	
+End Function
+
+'++LotusScript Development Environment:2:2:CON_AddExtFirm:1:8
+Sub CON_AddExtFirm(Param As NotesDocument, nSide As Integer)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_AddExtFirm"}
+	Dim ErrStr As String
+	
+	Dim extUNID As Variant
+	Dim extFirm As Variant
+	Dim extSobst As Variant
+	Dim extMan As Variant
+	Dim extINN As Variant
+	Dim extAccount As Variant
+	Dim extBIK As Variant
+	Dim extBank As Variant
+	Dim extLegalAddress As Variant
+	Dim extFactAddres As Variant
+	Dim extCategoryUL As Variant
+	Dim extJob As Variant
+	Dim vnArray As Variant
+	Dim dynamicScript As String
+	
+	Set ExecuteDocReturn = Nothing
+	dynamicScript = {Use "Vendor_UI"
+	Set ExecuteDocReturn = VDUI_SelectApproveVendor(False)}
+	
+	Execute(dynamicScript)
+	
+	If ExecuteDocReturn Is Nothing Then GoTo endh
+	
+	vnArray = ArrayInit(param.Getitemvalue("Vendors"))
+	extUNID = ArrayInit(Param.GetItemvalue("ExtFirmUNID"))
+	extFirm = ArrayInit(Param.GetItemvalue("ExtFirm"))
+	extSobst = ArrayInit(Param.GetItemvalue("ExtSobstv"))
+	extMan = ArrayInit(Param.GetItemvalue("ExtMan"))
+	extINN = ArrayInit(Param.GetItemvalue("ExtINN"))
+	extAccount = ArrayInit(Param.GetItemvalue("ExtAccount"))
+	extBIK = ArrayInit(Param.GetItemvalue("ExtBIK"))
+	extBank = ArrayInit(Param.GetItemvalue("ExtBank"))
+	extLegalAddress = ArrayInit(Param.GetItemvalue("ExtLegalAddres"))
+	extFactAddres = ArrayInit(Param.GetItemvalue("ExtFactAddres"))
+	extCategoryUL = ArrayInit(Param.GetItemvalue("ExtCategoryUL"))
+	extJob = ArrayInit(Param.GetItemvalue("extJob"))
+	
+	If nSide = 1 And UBound(vnArray) = 0 Then vnArray = ArrayAppendElement(vnArray,"-")
+	
+	If ubound(extUNID) = 0 And nSide = 2 Then
+		vnArray = ArrayAppendElement(vnArray,"-")
+		extUNID = ArrayAppendElement(extUNID,"-")
+		extFirm = ArrayAppendElement(extFirm,"-")
+		extSobst = ArrayAppendElement(extSobst,"-")
+		extMan = ArrayAppendElement(extMan,"-")
+		extINN = ArrayAppendElement(extINN,"-")
+		extAccount = ArrayAppendElement(extAccount,"-")
+		extBIK = ArrayAppendElement(extBIK,"-")
+		extBank = ArrayAppendElement(extBank,"-")
+		extLegalAddress = ArrayAppendElement(extLegalAddress,"-")
+		extFactAddres = ArrayAppendElement(extFactAddres,"-")
+		extCategoryUL = ArrayAppendElement(extCategoryUL,"-")
+		extJob = ArrayAppendElement(extJob,"-")
+	End If
+	
+	If Len(ExecuteDocReturn.GetItemValue("UNID")(0)) > 0 Then 
+		extUNID(nSide - 1) = ExecuteDocReturn.GetItemValue("UNID")(0)
+	Else
+		extUNID(nSide - 1) = "" & ExecuteDocReturn.UniversalID
+	End If
+	extFirm(nSide - 1) = ExecuteDocReturn.GetItemValue("Firm")(0)
+	vnArray(nSide) = ExecuteDocReturn.GetItemValue("Firm")(0)
+	extSobst(nSide - 1) = ExecuteDocReturn.GetItemValue("Sobstv")(0)
+	If ExecuteDocReturn.GetItemValue("FirmKey")(0) <> "" Then 
+		vnArray(nSide) = ExecuteDocReturn.GetItemValue("FirmKey")(0)
+		extSobst(nSide - 1) = "-"
+	End if
+	
+	
+	If Left(StrRight(ExecuteDocReturn.GetItemValue("CategoryUL")(0),{|}),1) = "0" Then
+		extMan(nSide - 1) = ExecuteDocReturn.GetItemValue("Caller")(0)
+	Else
+		extMan(nSide - 1) = ExecuteDocReturn.GetItemValue("Firm")(0)
+	End If
+	If ExecuteDocReturn.GetItemValue("INN")(0)<> "" Then extINN(nSide - 1) = ExecuteDocReturn.GetItemValue("INN")(0)
+	If ExecuteDocReturn.GetItemValue("Count")(0)<>"" Then extAccount(nSide - 1) = ExecuteDocReturn.GetItemValue("Count_2")(0) ' & "~" & ExecuteDocReturn.GetItemValue("Count")(0)
+	If ExecuteDocReturn.GetItemValue("Kod")(0)<> "" Then extBIK(nSide - 1) = ExecuteDocReturn.GetItemValue("Kod")(0)
+	If ExecuteDocReturn.GetItemValue("Bank_Get")(0) <>"" Then extBank(nSide - 1) = ExecuteDocReturn.GetItemValue("Bank_Get")(0)
+	If ExecuteDocReturn.GetItemValue("LegalAddress")(0) <> "" Then extLegalAddress(nSide - 1) = Implode(ExecuteDocReturn.GetItemValue("LegalAddress"),{,})
+	If ExecuteDocReturn.GetItemValue("Address")(0) <> "" Then extFactAddres(nSide - 1) = Implode(ExecuteDocReturn.GetItemValue("Address"),{,})
+	If ExecuteDocReturn.GetItemValue("Job_title")(0) <> "" Then extJob(nSide - 1) = ExecuteDocReturn.GetItemValue("Job_title")(0)
+	extCategoryUL(nSide - 1) = ExecuteDocReturn.GetItemValue("CategoryUL")(0)
+	
+	Call Param.ReplaceItemValue("InterCompanyVising","")
+	If ExecuteDocReturn.GetItemValue("Internal")(0) = "1" Then Call Param.ReplaceItemValue("InterCompanyVising","1") 
+
+	If InStr(LCase(Implode(ExecuteDocReturn.Getitemvalue("Category_scala"),{~})), {реклама}) Then
+		Call Param.Replaceitemvalue("isMedia", "1")
+	End If
+
+	Call Param.ReplaceItemValue("Resident",ExecuteDocReturn.GetItemValue("Resident"))	
+	Call Param.ReplaceItemValue("Scala",ExecuteDocReturn.GetItemValue("ScalaCode"))
+	Call Param.ReplaceItemValue("Poligraph",ExecuteDocReturn.GetItemValue("Poligr"))
+	Call Param.ReplaceItemValue("ExtFirmUNID",extUNID)
+	Call Param.ReplaceItemValue("ExtFirm",extFirm)
+	Call Param.ReplaceItemValue("ExtSobstv",extSobst)
+	Call Param.ReplaceItemValue("ExtMan",extMan)
+	Call Param.ReplaceItemValue("ExtINN",extINN)
+	' Р/с ~ К/с
+	Call Param.ReplaceItemValue("ExtAccount",extAccount)
+	Call Param.ReplaceItemValue("ExtBIK",extBIK)
+	Call Param.ReplaceItemValue("ExtBank",extBank)
+	Call Param.ReplaceItemValue("ExtLegalAddres",extLegalAddress)
+	Call Param.ReplaceItemValue("ExtFactAddres",extFactAddres)
+	Call Param.ReplaceItemValue("ExtCategoryUL",extCategoryUL)
+	Call Param.ReplaceItemValue("extJob",extJob)
+	Call Param.ReplaceItemValue("Vendors",vnArray)
+	
+	Call Param.RemoveItem("ExtMan_bkp")
+	Call Param.RemoveItem("ExtProcINfo_1")
+	
+	Set ExecuteDocReturn = Nothing
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:CON_GetGarantLetterTemplate:1:8
+Function CON_GetGarantLetterTemplate(Company As String) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "CON_GetGarantLetterTemplate"}
+	Dim ErrStr As String
+	
+	Dim glTemplateView As NotesView
+	
+	Set CON_GetGarantLetterTemplate = Nothing
+	
+	Set glTemplateView = CON_GetContractDb().Getview("GarantLetters")
+	If glTemplateView Is Nothing Then Error 5001, "Не найдено служебное представление: GarantLetters"
+	MsgBox company
+	Set CON_GetGarantLetterTemplate = glTemplateView.Getdocumentbykey(Company, True)
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:CON_CheckVendorStatus:1:8
+Function CON_CheckVendorStatus(param As NotesDocument) As Boolean
+	On Error GoTo handler
+	Const FuncName = {Function "CON_CheckVendorStatus"}
+	Dim ErrStr As String
+	
+	Dim tmp As NotesDocument
+	
+	ForAll x In param.Getitemvalue("VendorUNID")
+		If Len(x) = 32 then
+		Set tmp = DBT_GetExtDocumentByUNID({VENDOR}, "", "", "" & x)
+		If tmp Is Nothing Then
+			MsgBox {Не возможно проверить статус сторон договора} & nLIne & {Визирование невозможно!}, 16
+			Exit Function
+		End If
+		
+		If tmp.Getitemvalue("StatusNumber")(0) = "900" Then
+			MsgBox tmp.Getitemvalue("Firm")(0) & { в статусе "ЗАБЛОК�?РОВАН".} & nLIne & {Визирование невозможно!}, 16
+			Exit Function
+		End If
+		End if
+	End ForAll
+	
+	CON_CheckVendorStatus = True
+	
+	GoTo endh
+handler:
+	ErrStr = libName & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:	
+End Function
+
+'++LotusScript Development Environment:2:2:CON_CreateExplaneNote:1:8
+Sub CON_CreateExplaneNote(Param As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_CreateExplaneNote" }
+	Dim ErrStr As String
+	
+	Dim ExplaneNote As Variant
+	Dim ValuesArr(5) As Variant
+	Dim dynamicScript As String
+	
+	If Len(Param.GetItemValue("ExtFirmUNID")(0))> 5 Then
+		Set ExecuteDocReturn = Nothing
+		ExecuteParamString = Param.GetItemValue("ExtFirmUNID")(0)
+		
+		dynamicScript = {Use "Vendor"
+		Set ExecuteDocReturn = VD_GetVendorByUNID(ExecuteParamString)}
+		
+		Execute(dynamicScript)
+		
+		If Not ExecuteDocReturn Is Nothing Then
+			ValuesArr(0) = ExecuteDocReturn.GetItemValue("Firm")(0)
+			ValuesArr(4) = ExecuteDocReturn.GetItemValue("Risk")(0)
+		End If
+	End If
+	
+	If Param.GetItemValue("EnableSumm")(0) = "0" Then
+		ValuesArr(2) = "Цена указана в приложении к договору."
+	Else
+		ValuesArr(2) = Param.GetItemValue("AgrMoney")(0) & { } & Param.GetItemValue("Currency")(0)
+	End If
+	
+	If Param.GetItemValue("Tender")(0) = "1" Then
+		ValuesArr(1) = "�?нформация указана в картчоке документа."
+	Else
+		ValuesArr(1) = "Отсутствует информация"
+	End If
+	
+	ValuesArr(3) = Param.GetItemValue("CondPay")(0)
+		
+	ExplaneNote = ArrayInit("Предмет договора: " & Param.GetItemValue("AgrName")(0)) 
+	ExplaneNote = ArrayAppendElement(ExplaneNote,"Документ отдела: " & Param.GetItemValue("FullPath")(UBound(Param.GetItemValue("FullPath"))))
+	ExplaneNote = ArrayAppendElement(ExplaneNote,"�?нформация о тендере или заявке: " & ValuesArr(1))
+	ExplaneNote = ArrayAppendElement(ExplaneNote,"Цена: " & ValuesArr(2))
+	ExplaneNote = ArrayAppendElement(ExplaneNote,"Условия оплаты: " & ValuesArr(3))
+	ExplaneNote = ArrayAppendElement(ExplaneNote,"Срок действия договора до: " & Param.GetItemValue("StopDate")(0))
+	ExplaneNote = ArrayAppendElement(ExplaneNote,"Поставщик: " & ValuesArr(0))
+	ExplaneNote = ArrayAppendElement(ExplaneNote,"Категория риска: " & ValuesArr(4))
+	
+	Call Param.ReplaceItemValue("ExplaneNote",ExplaneNote)
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err,ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:2:CON_SetAccessFromParent:1:8
+Sub CON_SetAccessFromParent(Source As NotesDocument, Destination As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_SetAccessFromParent"}
+	Dim ErrStr As String
+
+	Call CON_InitAccessFieldsList(Source)
+	
+	ForAll x In AccessAuthorsFieldsList
+		Destination.Replaceitemvalue(ListTag(x), x).Isauthors = True
+	End ForAll
+	
+	ForAll x In AccessReadersFieldsList
+		Destination.Replaceitemvalue(ListTag(x), x).Isreaders = True
+	End ForAll
+	
+	Destination.Replaceitemvalue("CompanyRead", Source.Getitemvalue("CompanyRead")).Isreaders = True
+	Destination.Replaceitemvalue("GroupAccessEdit", Source.Getitemvalue("GroupAccessEdit")).Isauthors = True
+	Destination.Replaceitemvalue("GroupAccessRead", Source.Getitemvalue("GroupAccessRead")).Isnames = True
+	Call Destination.Replaceitemvalue("Fin", Source.Getitemvalue("Fin"))
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:2:CON_FillGarantLetter:1:8
+Sub CON_FillGarantLetter(param As NotesDocument, FileName As String)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_FillGarantLetter"}
+	Dim ErrStr As String
+	
+	Dim wordApp As Variant
+	Dim wordDoc As Variant
+	Dim fields List As Variant
+	Dim reqviz As String
+	Dim dScript As String
+		
+	Set wordApp = CreateObject({Word.Application})
+	Call wordApp.Documents.Open(FileName)
+	Set wordDoc =  wordApp.ActiveDocument
+
+	fields("Number") = param.Getitemvalue("MainAgreement")(0)
+	fields("ExtMan") = param.Getitemvalue("Extman")(0)
+	fields("ExtTitle") = param.Getitemvalue("extJob")(0)
+	fields("ExtFirm") = param.Getitemvalue("ExtSobstv")(0) & { "} & param.Getitemvalue("ExtFirm")(0) & {"}
+	fields("IntMan") = param.Getitemvalue("IntMan")(0)
+	fields("Dov") = param.Getitemvalue("IntProcInfo")(0)
+	fields("GarantText") = Implode(param.Getitemvalue("GarantText"))
+	fields("Sender") = param.Getitemvalue("intSobstv")(0) & { "} & param.Getitemvalue("intFirm")(0) & {"}
+	fields("SendTo") = param.Getitemvalue("ExtSobstv")(0) & { "} & param.Getitemvalue("ExtFirm")(0) & {"}
+	reqviz = {Р/С } & StrLeft(param.Getitemvalue("ExtAccount")(0),{~}) & { в } & param.Getitemvalue("ExtBank")(0) & { Б�?К } & param.Getitemvalue("ExtBIK")(0) & { К/С } & StrRight(param.Getitemvalue("ExtAccount")(0),{~})   
+	fields("ExtAccount") = reqviz 
+	reqviz = {Р/С } & StrLeft(param.Getitemvalue("IntAccount")(0),{~}) & { в } & param.Getitemvalue("IntBank")(0) & { Б�?К } & param.Getitemvalue("IntBIK")(0) & { К/С } & StrRight(param.Getitemvalue("IntAccount")(0),{~})
+	fields("IntAccount") = reqviz
+	
+	ForAll x In fields
+		wordDoc.formfields(ListTag(x)).Range.Text  = x
+	End ForAll
+	
+	wordApp.Visible = True
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:CON_GetDocumentByUNID:1:8
+Function CON_GetDocumentByUNID(UNID As String) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "CON_GetDocumentByUNID"}
+	Dim ErrStr As String
+	
+	Set CON_GetDocumentByUNID = Nothing
+
+	If UnidView Is Nothing Then
+		Set UnidView = CON_GetContractDb().Getview(CONTRACT_BYUNID_VIEWNAME)
+	End If
+	If ViewByUNID = "" Then ViewByUNID = UnidView.Universalid 
+	Set CON_GetDocumentByUNID = UnidView.Getdocumentbykey(UNID, True)
+	
+	If CON_GetDocumentByUNID Is Nothing Then Set CON_GetDocumentByUNID = CON_GetContractDb().Getdocumentbyunid(unid)
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+
+
+'++LotusScript Development Environment:2:1:CON_SetNadomNeedSend:1:8
+Function CON_SetNadomNeedSend(param As NotesDocument) As Boolean
+	On Error Goto handler
+	Const FuncName = {Function "CON_SetNadomNeedSend" }
+	Dim ErrStr As String
+
+	Dim macro As Variant
+
+Const macros = {ccVal:=@If(@Text(crosscurse)!="";crosscurse;1);
+cond1:=@Contains(@LowerCase(@Implode(Vendors;"~"));"почта сервис");
+cond2:=@If(Resident = "":"1";@False;@True);
+cond3:=@If(@Text(AgrMoney)="";@False;AgrMoney/ccVal>=50000;@True;@False);
+	@If(cond1 & cond2 & cond3; @True; @false)}
+
+	macro = Evaluate(macros, param)
+	
+	CON_SetNadomNeedSend = (macro(0) = 1)
+
+	Goto Endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err,ErrStr
+Endh:
+End Function
+
+'++LotusScript Development Environment:2:2:CON_RecalcChildAccess:1:8
+Sub CON_RecalcChildAccess(ParentDoc As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_RecalcChildAccess"}
+	Dim ErrStr As String
+	
+	Dim childDc As NotesDocumentCollection
+	Dim child As NotesDocument
+	
+	If ChildView Is nothing Then Set ChildView = CON_GetContractDb().Getview(CONTRACT_CHILDDOCS_VIEWNAME)
+	If ChildView Is Nothing Then Error 5004, {Не найдено служебное представление: } & CONTRACT_CHILDDOCS_VIEWNAME
+	
+	Set childDc = ChildView.Getalldocumentsbykey(ParentDoc.Getitemvalue("UNID")(0), True)
+	If childDc.Count < 1 Then GoTo endh
+	
+	Set child = childDc.Getfirstdocument()
+	While Not child Is Nothing
+		Call CON_SetAccessFromParent(ParentDoc, child)
+		If child.Getitemvalue("Fullpath")(0) = "" Then Call child.Replaceitemvalue("Fullpath", ParentDoc.Getitemvalue("Fullpath"))
+		If child.Getitemvalue("ContractTime")(0) = "1" then
+			Call child.Replaceitemvalue("Expire",ParentDoc.Getitemvalue("Expire"))
+			Call child.Replaceitemvalue("StopDate",ParentDoc.Getitemvalue("StopDate"))
+			Call child.Replaceitemvalue("StandBy",ParentDoc.Getitemvalue("StandBy"))
+		End If
+		Call child.Replaceitemvalue("AddCategory", ParentDoc.Getitemvalue("AddCategory"))
+		Call child.Replaceitemvalue("Рарка",ParentDoc.Getitemvalue("Рарка"))
+		Call child.Replaceitemvalue("Vendors",ParentDoc.Getitemvalue("Vendors"))
+		Call child.Replaceitemvalue("VendorUNID",ParentDoc.Getitemvalue("VendorUNID"))
+		Call child.Save(True,child.Isresponse)
+		Set child = childDc.Getnextdocument(child)
+	Wend 
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:2:CON_SetContractDb:1:8
+Sub CON_SetContractDb(db As NotesDatabase)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_SetContractDb"}
+	Dim ErrStr As String
+	
+	Set ContractDb = db
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:CON_GetParentDocument:1:8
+Function CON_GetParentDocument(Param As Variant) As NotesDocument
+	On Error GoTo handler
+	Const FuncName = {Function "CON_GetParentDocument"}
+	Dim ErrStr As String
+	
+	Dim skey As String
+		
+	Set CON_GetParentDocument = Nothing
+	
+	Select Case TypeName(param)
+		Case "STRING":
+			skey = param
+		Case "NOTESDOCUMENT":
+			skey = param.Getitemvalue("ParentDocUNID")(0)
+		Case Else:
+			Error 5005, "Неверный параметр"
+	End Select
+	
+	If UnidView Is Nothing Then
+		Set UnidView = CON_GetContractDb().Getview(CONTRACT_BYUNID_VIEWNAME)
+	End If
+	If ViewByUNID = "" Then ViewByUNID = UnidView.Universalid 
+	Set CON_GetParentDocument = UnidView.Getdocumentbykey(skey, True)
+	
+	GoTo endh
+	
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Function
+
+'++LotusScript Development Environment:2:2:CON_FillIntFirmFields:1:8
+Sub CON_FillIntFirmFields(Param As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_FillIntFirmFields"}
+	Dim ErrStr As String
+	
+	Dim dynamicScript As String
+	Dim vnArray As Variant
+	
+	Set ExecuteDocReturn = Nothing
+	dynamicScript = {Use "Vendor_UI"
+	Set ExecuteDocReturn = VDUI_SelectApproveVendor(True)}
+	
+	Execute(dynamicScript)
+	
+	If ExecuteDocReturn Is Nothing Then GoTo endh
+	
+	vnArray = ArrayInit(param.GetItemValue("Vendors"))
+
+'	If ExecuteDocReturn.GetItemValue("FirmKey")(0) = "" Then
+'		ExecuteParamString = ExecuteDocReturn.GetItemValue("Firm")(0)
+'		Call Param.ReplaceItemValue("IntFirm",ExecuteDocReturn.GetItemValue("Firm")(0))
+'		Call Param.ReplaceItemValue("IntSobstv",ExecuteDocReturn.GetItemValue("Sobstv")(0))
+'		vnArray(0) = ExecuteDocReturn.GetItemValue("Firm")(0)
+'	Else
+		vnArray(0) = ExecuteDocReturn.GetItemValue("FirmKey")(0)
+		Call Param.ReplaceItemValue("IntFirm",ExecuteDocReturn.GetItemValue("FirmKey")(0))
+		Call Param.ReplaceItemValue("IntSobstv",ExecuteDocReturn.GetItemValue("Sobstv")(0))
+		ExecuteParamString = ExecuteDocReturn.GetItemValue("FirmKey")(0)
+'	End If
+
+	Call Param.ReplaceItemValue("IntMan",ExecuteDocReturn.GetItemValue("Caller")(0))
+	Call Param.ReplaceItemValue("IntINN",ExecuteDocReturn.GetItemValue("INN")(0))
+	' Р/с ~ К/с
+	Call Param.ReplaceItemValue("IntAccount",ExecuteDocReturn.GetItemValue("Count_2")(0))
+	Call Param.ReplaceItemValue("IntBIK",ExecuteDocReturn.GetItemValue("Kod")(0))
+	Call Param.ReplaceItemValue("IntBank",ExecuteDocReturn.GetItemValue("Bank_Get")(0))
+	Call Param.ReplaceItemValue("IntLegalAddres",Implode(ExecuteDocReturn.GetItemValue("LegalAddress")))
+	Call Param.ReplaceItemValue("IntFactAddres",Implode(ExecuteDocReturn.GetItemValue("Address")))
+	Call Param.ReplaceItemValue("IntCategoryUL",ExecuteDocReturn.GetItemValue("CategoryUL")(0))
+	Call Param.ReplaceItemValue("intProcINfo",ExecuteDocReturn.GetItemValue("Job_title")(0))
+	Call Param.ReplaceItemValue("IntFirmUNID",ExecuteDocReturn.UniversalID)
+	Call Param.ReplaceItemValue("Vendors", vnArray)
+	If Len(ExecuteDocReturn.GetItemValue("UNID")(0)) > 0 Then Call Param.ReplaceItemValue("IntFirmUNID",ExecuteDocReturn.GetItemValue("UNID")(0))
+	
+	Call Param.ReplaceItemValue("FirmAbbr",ExecuteDocReturn.GetItemValue("FirmAbbr")(0))
+	
+	Set ExecuteDocReturn = Nothing 
+	dynamicScript = {Use "PhoneDirectory_UI"
+	Set ExecuteDocReturn = PD_GetFirmDoc(ExecuteParamString)}
+	
+	Execute(dynamicScript)
+	
+	If Not ExecuteDocReturn Is Nothing Then Call Param.ReplaceItemValue("FirmAbbr",ExecuteDocReturn.GetItemValue("FirmAbbr")(0))
+	Set ExecuteDocReturn = nothing
+	Call Param.RemoveItem("intMan_bkp")
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:2:CON_CopyParentsDataFields:1:8
+Sub CON_CopyParentsDataFields(Source As NotesDocument, Destination As NotesDocument)
+	On Error GoTo handler
+	Const FuncName = {Sub "CON_CopyParentsDataFields"}
+	Dim ErrStr As String
+	
+	Dim sDoc As NotesDocument
+	
+	Set sDoc = CON_GetSetting("InheritParentFields")
+
+	ForAll x In sDoc.Getitemvalue("Value")
+		Call Destination.Replaceitemvalue(x, Source.Getitemvalue(x))
+	End ForAll
+	
+	GoTo endh
+handler:
+	ErrStr = libName & ", " & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err, ErrStr
+endh:
+End Sub
+
+'++LotusScript Development Environment:2:1:CON_SendResidentNadom:1:8
+Function CON_SendResidentNadom(param As NotesDocument) As Boolean
+	On Error Goto handler
+	Const FuncName = {Function "CON_SendResidentNadom" }
+	Dim ErrStr As String
+
+	Dim s As New NotesSession
+	Dim mailDb As NotesDatabase
+	Dim mailDoc As NotesDocument
+	Dim sDoc As NotesDocument
+	Dim rtItem As NotesRichTextItem
+	Dim srtItem As NotesRichTextItem
+
+	Set mailDb = DBT_GetMailBox()
+
+	If mailDb Is Nothing Then
+		Set mailDb = s.getdatabase(param.parentDatabase.server,{mail1.box},False)
+		If mailDb Is Nothing Then Error 5001, {Почтовый роутер не найден.}
+		If Not mailDb.isopen() Then Error 5002, {Почтовый роутер недоступен.}
+	Else
+		If Not mailDb.isopen() Then Error 5002, {Почтовый роутер недоступен.}
+	End If
+
+	Set mailDoc = mailDb.Createdocument()
+
+	Call mailDoc.Replaceitemvalue("Form", "Memo")
+	Call mailDoc.Replaceitemvalue("Principal", param.Parentdatabase.title)
+	Call mailDoc.Replaceitemvalue("From", {mail robot/PROMP/RU})
+	Call mailDoc.Replaceitemvalue("PostedDate", Now())
+	Call mailDoc.Replaceitemvalue("Subject", {Договорные документы})
+	Call mailDOc.Replaceitemvalue("SendTo", param.Getitemvalue("CreatorLN"))
+	Call mailDOc.Replaceitemvalue("Recipients", param.Getitemvalue("CreatorLN"))
+
+	Set sDoc = CON_GetSetting("50USDNadomMail")
+
+	Set rtItem = mailDoc.Createrichtextitem("Body")
+	Set srtItem = sDoc.Getfirstitem("ToFile")
+	Call rtItem.Appendrtitem(srtItem)
+
+	Call rtItem.Addnewline(1)
+	Call rtItem.Appendtext({Ссылка на документ => })
+	Call rtItem.Appenddoclink(param, "")
+	Call mailDoc.Save(true, false)
+
+	CON_SendResidentNadom = True
+
+	Goto Endh
+handler:
+	ErrStr = libName & FuncName & ": " & Err &", в стр " & Erl & nLine & Error$
+	Error Err,ErrStr
+Endh:
+End Function

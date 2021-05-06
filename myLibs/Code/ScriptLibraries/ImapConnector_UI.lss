@@ -1,0 +1,99 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library ImapConnector_UI
+'Olimpus: 14.12.2020
+'********************************************
+Option Public
+Option Declare
+Use "LS2JImapConnector"
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class ImapConnector_UI
+Declare Sub Initialize
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {ImapConnector_UI}
+'********************************************
+'Class ImapConnector_UI
+'Olimpus: 14.12.2020
+'********************************************
+Class ImapConnector_UI
+	Private connector As IMAPConnector
+	Private uiDoc_ex As NotesUIDocument
+	
+	Sub New (uiDoc As NotesUIDocument)
+		On Error GoTo ErrH
+
+		Set uiDoc_ex = uiDoc
+		Set connector = New IMAPConnector(uidoc.Document)
+	
+		GoTo EndH
+ErrH:
+		stop
+		Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Sub setFolders
+	'Olimpus: 14.12.2020
+	'********************************************
+	Sub setImapFolders() 
+	On Error GoTo ErrH
+
+	Dim folders As Variant
+	folders = connector.getImapFolders()
+	Dim res As Variant
+	Dim ws As New NotesUIWorkspace
+	res = ws.Prompt(7, "Папки ящика", "Выберите папки", "", folders)
+	
+	If IsEmpty(res) Then GoTo EndH
+	
+		Call connector.setImapFolders(res)
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+	'********************************************
+	'Sub setFolders
+	'Olimpus: 14.12.2020
+	'********************************************
+	Sub setFolders()
+	On Error GoTo ErrH
+
+		Dim folders As Variant
+		folders = connector.getFolders()
+		Dim res As Variant
+		Dim ws As New NotesUIWorkspace
+		res = ws.Prompt(7, "Папки ящика", "Выберите папки", "", folders)
+		
+		If IsEmpty(res) Then GoTo EndH
+		
+		Call connector.setFolders(res)
+	
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Sub
+End Class
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+
+
+	GoTo EndH
+ErrH:
+	stop
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+

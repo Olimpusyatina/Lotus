@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?><note xmlns="http://www.lotus.com/dxl" class="filter" maintenanceversion="1.0" replicaid="432586CD00293F3C" version="11.0">
+<noteinfo noteid="23e" sequence="2" unid="68D29D35CC75EAAA432586CD0029AD5A">
+<created><datetime>20210506T103513,54+03</datetime></created>
+<modified><datetime>20210506T105909,31+03</datetime></modified>
+<revised><datetime>20210506T105909,30+03</datetime></revised>
+<lastaccessed><datetime>20210506T105909,30+03</datetime></lastaccessed>
+<addedtofile><datetime>20210506T103513,72+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
+<wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
+<item name="$TITLE" sign="true"><text>YandexTranslateLib10</text></item>
+<item name="$Flags"><text>s34Q</text></item>
+<item name="$PublicAccess" sign="true"><text>1</text></item>
+<item name="$DesignerVersion"><text>8.5.3</text></item>
+
+</note>

@@ -1,0 +1,173 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+'********************************************
+'Library DeletionStubLib
+'Olimpus: Nov 22, 2019
+'********************************************
+Option Public
+Option Declare
+'Option Explicit
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Sub Initialize
+Declare Function APIStublessDeleteWrapper (doc As NotesDocument) As String
+Declare Function APIStublessDelete (db As NotesDatabase, hexNoteId As String) As String
+Declare Function GetAPIError (errorCode As Integer) As String
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private nLine As String
+Private Const designElem = {}
+
+
+'** Notes C-API functions
+Declare Function OSPathNetConstruct Lib "nnotes.dll" (ByVal portName As Integer, _
+ByVal serverName As String, ByVal fileName As String, ByVal pathName As String) As Integer
+
+Declare Function NSFDbOpen Lib "nnotes.dll" (ByVal dbName As String, hDb As Long) As Integer
+Declare Function NSFDbClose Lib "nnotes.dll" (ByVal hDb As Long) As Integer
+
+Declare Function NSFNoteDelete Lib "nnotes.dll" (ByVal hDb As Long, ByVal NoteID As Long, _
+ByVal flags As Integer) As Integer
+
+Declare Function OSLoadString Lib "nnotes.dll" (ByVal hModule As Long, ByVal stringCode As Integer, _
+ByVal retBuffer As String, ByVal bufferLength As Integer) As Integer
+
+'** Error code masks
+Const ERR_MASK = &H3fff
+Const PKG_MASK = &H3f00
+Const ERRNUM_MASK = &H00ff
+
+'** Notes Update flags
+Const UPDATE_FORCE = 0001						'update even if ERR_CONFLICT
+Const UPDATE_NAME_KEY_WARNING = 0002	'give error if new field name defined
+Const UPDATE_NOCOMMIT = 0004					'do NOT do a database commit after update
+Const UPDATE_NOREVISION = 0256				'do NOT maintain revision history
+Const UPDATE_NOSTUB = 0512						'update body but leave no trace of note in file if deleted
+Const UPDATE_INCREMENTAL = 16384			'Compute incremental note info
+Const UPDATE_DELETED = 32768					'update body DELETED
+
+'++LotusScript Development Environment:2:2:Initialize:2:10
+
+Sub Initialize
+	On Error GoTo ErrH
+	nLine = Chr(10) & Chr(13)
+
+	'** a simple test of APIStublessDelete, if you happen to have a NoteID you want to delete
+	Dim hexNoteID As String
+	hexNoteID = InputBox$("Please enter a valid NoteID for deletion, using Hex notation:")
+	
+	If (hexNoteID = "") Then
+		Print "Nothing entered. Exiting."
+		Exit Sub
+	End If
+	
+	Dim session As New NotesSession
+	Dim db As NotesDatabase
+	Dim result As String
+	Set db = session.CurrentDatabase
+	result = APIStublessDelete(db, hexNoteID)
+	
+	If (result = "") Then
+		Print "Successfully deleted NoteID " & hexNoteID
+	Else
+		Print result
+	End If
+
+	GoTo EndH
+ErrH:
+	Error Err, DesignElem & " -> " & GetThreadInfo(1) & ", c. " & CStr(ErL) & nLine & Error$ & nLine & Err
+	Resume endH
+EndH:
+End Sub
+
+'++LotusScript Development Environment:2:1:APIStublessDeleteWrapper:2:8
+
+Function APIStublessDeleteWrapper (doc As NotesDocument) As String
+	'** a very simple wrapper around the APIStublessDelete function, if you
+	'** just want to pass a NotesDocument as a parameter
+	APIStublessDeleteWrapper = APIStublessDelete(doc.ParentDatabase, doc.NoteID)
+End Function
+
+'++LotusScript Development Environment:2:1:APIStublessDelete:2:8
+
+Function APIStublessDelete (db As NotesDatabase, hexNoteId As String) As String
+	'** This function will attempt to delete a document in a Notes database without
+	'** leaving a deletion stub behind. When dealing directly with Notes, you'll generally
+	'** get a NoteID as a Hex number (for example, using NotesDocument.NoteID),
+	'** so this function expects you to pass a Hex number String as a NoteID.
+	'** You can also remove a deletion stub with this function, provided you know its
+	'** NoteID (available using NotesPeek or DelStubs)
+	
+	'** If you plan to do a large number of deletions using this method, you'll probably
+	'** want to use NSFDbOpen to open the database, and leave the handle open
+	'** during all of your deletions, instead of opening and closing the database
+	'** a bunch of times
+	
+	'** by Julian Robichaux, http://www.nsftools.com
+	On Error GoTo processError
+	
+	Dim hDb As Long
+	Dim convertID As Long
+	Dim pathName As String*256
+	Dim result As Integer
+	
+	'** create a proper network path name with OSPathNetConstruct
+	Call OSPathNetConstruct(0, db.Server, db.FilePath, pathName)
+	
+	'** open the database and get a handle with NSFDbOpen
+	result = NSFDbOpen(pathName, hDb)
+	If result <> 0 Then
+		APIStublessDelete = "Cannot open database " & db.FilePath & " on server " & db.Server & _
+		". Error was " & CStr(result) & ": " & GetAPIError(result)
+		Exit Function
+	End If
+	
+	'** convert the NoteID from Hex to Long, and strip off the flag if this is a deletion stub
+	convertID = CLng(Val("&H" & hexNoteId)) And &H7FFFFFFF
+	
+	'** delete the note (using the NoteID of the doc) using UPDATE_NOSTUB to do a "stubless" delete
+	result = NSFNoteDelete(hDb, convertID, UPDATE_NOSTUB Or UPDATE_FORCE)
+	If result <> 0 Then
+		APIStublessDelete = "Unable to delete doc" & _
+		". Error was " & CStr(result) & ": " & GetAPIError(result)
+	End If
+	
+closeDb:
+	Call NSFDbClose(hDb)
+	
+endOfFunction:
+	Exit Function
+	
+processError:
+	APIStublessDelete = "Notes error " & Err & " occurred: " & Error$
+	If (hDb > 0) Then
+		Call NSFDbClose(hDb)
+	End If
+	Exit Function
+	
+End Function
+
+'++LotusScript Development Environment:2:1:GetAPIError:2:8
+
+Function GetAPIError (errorCode As Integer) As String
+	Dim errorString As String*256
+	Dim returnErrorString As String
+	Dim resultStringLength As Long
+	Dim errorCodeTranslated As Integer
+	
+	'** mask off the top 2 bits of the errorCode that was returned; this is
+	'** what the ERR macro in the API does
+	errorCodeTranslated = (errorCode And ERR_MASK)
+	
+	'** get the error code translation using the OSLoadString API function
+	resultStringLength = OSLoadString(0, errorCodeTranslated, errorString, Len(errorString) - 1)
+	
+	'** strip off the null-termination on the string before you return it
+	If (InStr(errorString, Chr(0)) > 0) Then
+		returnErrorString = Left$(errorString, InStr(errorString, Chr(0)) - 1)
+	Else
+		returnErrorString = errorString
+	End If
+	
+	GetAPIError = returnErrorString
+	
+End Function
