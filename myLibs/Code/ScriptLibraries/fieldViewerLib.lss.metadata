@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?><note xmlns="http://www.lotus.com/dxl" class="filter" maintenanceversion="1.0" replicaid="432586CD00293F3C" version="11.0">
-<noteinfo noteid="1c2" sequence="4" unid="8AAB208F801494DC432586CD00299F49">
-<created><datetime>20210506T103437,53+03</datetime></created>
-<modified><datetime>20210506T105904,86+03</datetime></modified>
-<revised><datetime>20210506T105904,85+03</datetime></revised>
-<lastaccessed><datetime>20210506T105904,85+03</datetime></lastaccessed>
-<addedtofile><datetime>20210506T103437,54+03</datetime></addedtofile></noteinfo>
+<noteinfo noteid="5be" sequence="1" unid="93A1731247DEC2A1432586DC0036530E">
+<created><datetime>20210521T125322,06+03</datetime></created>
+<modified><datetime>20210521T125322,08+03</datetime></modified>
+<revised><datetime>20210521T125322,07+03</datetime></revised>
+<lastaccessed><datetime>20210521T125322,07+03</datetime></lastaccessed>
+<addedtofile><datetime>20210521T125322,07+03</datetime></addedtofile></noteinfo>
 <updatedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
 <wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
 <item name="$TITLE" sign="true"><text>fieldViewerLib</text></item>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?><note xmlns="http://www.lotus.com/dxl" class="filter" maintenanceversion="1.0" replicaid="432586CD00293F3C" version="11.0">
-<noteinfo noteid="17e" sequence="2" unid="E1F4C709C885FF27432586CD0029707D">
-<created><datetime>20210506T103237,73+03</datetime></created>
-<modified><datetime>20210506T105904,03+03</datetime></modified>
-<revised><datetime>20210506T105904,02+03</datetime></revised>
-<lastaccessed><datetime>20210506T105904,02+03</datetime></lastaccessed>
-<addedtofile><datetime>20210506T103237,80+03</datetime></addedtofile></noteinfo>
+<noteinfo noteid="5c2" sequence="1" unid="B9498EA818B1CA81432586DC00365E8C">
+<created><datetime>20210521T125351,48+03</datetime></created>
+<modified><datetime>20210521T125351,52+03</datetime></modified>
+<revised><datetime>20210521T125351,51+03</datetime></revised>
+<lastaccessed><datetime>20210521T125351,51+03</datetime></lastaccessed>
+<addedtofile><datetime>20210521T125351,51+03</datetime></addedtofile></noteinfo>
 <updatedby><name>CN=Daniel Alvers/OU=IS/OU=Melbourne/O=C&amp;L/C=AU</name><name>CN=Sandbox Signer/O=Web</name><name>CN=Notes Net/O=Web</name><name>CN=Kipil Lee/OU=IS&amp;C/OU=SYDN/O=ErnstYoung/C=AU</name><name>CN=GroupWare Services/O=ErnstYoung/C=AU</name><name>CN=Alex Elliott/OU=CONTRACTOR/OU=SYDN/O=ErnstYoung/C=AU</name><name>CN=Alex Elliott/O=AGE Computer Consultancy</name><name>CN=AGECOM Development/O=AGE Computer Consultancy</name><name>CN=Alex Elliott/O=AGE Computer Consultancy</name><name>CN=AGECOM Development/O=AGE Computer Consultancy</name><name>CN=AGECOM Support/O=AGE Computer Consultancy</name><name>CN=AGECOM Development/O=AGE Computer Consultancy</name><name>CN=AGECOM Support/O=AGE Computer Consultancy</name><name>CN=AGECOM Development/O=AGE Computer Consultancy</name><name>CN=AGECOM Support/O=AGE Computer Consultancy</name><name>CN=AGECOM Development/O=AGE Computer Consultancy</name><name>CN=AGECOM Support/O=AGE Computer Consultancy</name><name>CN=AGECOM Development/O=AGE Computer Consultancy</name><name>CN=Alex Elliott/OU=DEVELOPER/O=TGADEV</name><name>CN=AGECOM Development/O=AGE Computer Consultancy</name><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></updatedby>
 <wassignedby><name>CN=Alexandr S. Olympiev/O=OTTO/C=RU</name></wassignedby>
 <item name="$TITLE" sign="true"><text>CLASSUserActivity</text></item>
