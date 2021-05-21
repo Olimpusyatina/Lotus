@@ -6,6 +6,9 @@
 Option Public
 Option Declare
 
+Use "LogTools"
+
+
 '++LotusScript Development Environment:2:5:(Forward):0:1
 Declare Class Interface
 Declare Class ObjectCollection
@@ -726,7 +729,6 @@ ErrH:
 EndH:
 	End Function
 End Class
-
 '++LotusScript Development Environment:2:2:Initialize:2:10
 
 Sub Initialize

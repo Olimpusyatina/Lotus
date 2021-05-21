@@ -6,6 +6,7 @@
 Option Public
 Option Declare
 Use "LS2JImapConnector"
+Use "DataBaseTools_UI"
 
 '++LotusScript Development Environment:2:5:(Forward):0:1
 Declare Class ImapConnector_UI
@@ -66,6 +67,10 @@ EndH:
 
 		Dim folders As Variant
 		folders = connector.getFolders()
+		If Not IsArray(folders) Then
+			connector.setFolders ""
+			GoTo endh	
+		End If
 		Dim res As Variant
 		Dim ws As New NotesUIWorkspace
 		res = ws.Prompt(7, "Папки ящика", "Выберите папки", "", folders)
@@ -80,6 +85,62 @@ ErrH:
 	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
 EndH:
 	End Sub
+	'********************************************
+	'Function setDatabase
+	'Return Boolean
+	'Olimpus: May 17, 2021
+	'********************************************
+	Function setDatabase() As Boolean
+	On Error GoTo ErrH
+
+	Dim db As NotesDatabase
+	Set db = DBTUI_ChooseDb(True)
+	
+	connector.setDatabase db
+
+	GoTo EndH
+ErrH:
+	stop
+	logger.error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function setForm
+	'Return Boolean
+	'Olimpus: May 17, 2021
+	'********************************************
+	Function setForm() As Boolean
+	On Error GoTo ErrH
+
+	Dim db As NotesDatabase
+	Set db = connector.getDatabase()
+	Dim forms As Variant
+	forms = db.Forms
+	Dim names() As String
+	Dim i As Integer
+	Dim f As NotesForm
+	ForAll form In forms
+		ReDim Preserve names(i) As String
+		names(i) = form.Name
+		i = i + 1
+	End ForAll
+
+	Dim res As Variant
+	Dim ws As New NotesUIWorkspace
+	res = ws.Prompt(4, "Forms", "select", , names)
+	
+	If IsEmpty(res) Then GoTo endh
+	
+	SetForm = connector.setForm(CStr(res))
+
+	GoTo EndH
+ErrH:
+	stop
+	logger.error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
 End Class
 '++LotusScript Development Environment:2:2:Initialize:2:10
 
@@ -96,4 +157,6 @@ ErrH:
 	Resume endH
 EndH:
 End Sub
+
+
 

@@ -274,7 +274,11 @@ EndH:
 				i = i + 1
 			End If
 		End ForAll
+		
+		If i = 0 Then GoTo endh
+		
 		getFolders = folders
+		
 	GoTo EndH
 ErrH:
 	stop
@@ -319,6 +323,61 @@ EndH:
 ErrH:
 	stop
 	Error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+EndH:
+	End Function
+	'********************************************
+	'Function setDatabase
+	'Return Boolean
+	'Olimpus: May 17, 2021
+	'********************************************
+	Function setDatabase(db As NotesDatabase) As Boolean
+	On Error GoTo ErrH
+
+		doc_ex.Replaceitemvalue "server", db.Server
+		doc_ex.Replaceitemvalue "filePath", db.Filepath
+		Error 5012, "124"
+				
+	GoTo EndH
+ErrH:
+	stop
+	logger.error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function getDatabase
+	'Return NotesDatabase
+	'Olimpus: May 17, 2021
+	'********************************************
+	Function getDatabase() As NotesDatabase
+	On Error GoTo ErrH
+
+	Dim s As New NotesSession
+		Set getDatabase = s.Getdatabase(doc_ex.Getitemvalue("server")(0), doc_ex.Getitemvalue("filePath")(0))
+
+	GoTo EndH
+ErrH:
+	stop
+	logger.error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
+EndH:
+	End Function
+	'********************************************
+	'Function setForm
+	'Return Variant
+	'Olimpus: May 17, 2021
+	'********************************************
+	Function setForm(form As String) As Boolean
+	On Error GoTo ErrH
+
+	doc_ex.Replaceitemvalue "formName", form
+	setForm = True
+
+	GoTo EndH
+ErrH:
+	stop
+	logger.error Err, DesignElem & " -> " & TypeName(Me) & " -> " & GetThreadInfo(1) & ", c. " & CStr(Erl) & nLine & Error$
+	Resume endH
 EndH:
 	End Function
 End Class

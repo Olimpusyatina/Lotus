@@ -2,6 +2,8 @@
 Option Public
 Option Declare
 
+Use "LogTools"
+
 '++LotusScript Development Environment:2:5:(Forward):0:1
 Declare Sub Initialize
 Declare Sub Terminate
@@ -26,6 +28,7 @@ Declare Public Function DBT_GetSettingFromDb (db As NotesDatabase,Sname As Strin
 Declare Function DBT_GetDbByReplicaID(Replica As String) As NotesDatabase
 Declare Sub DBT_AccessRefreshTree(docMain As NotesDocument, EditAccessLN As Variant, ExecutorLN As Variant)
 Declare Function DBT_GetExtDocumentByUNID(sKey As String, filePath As String, Replica As String, UNID As String) As NotesDocument
+Declare Function DBT_RegisterNewDB (db As NotesDatabase, searchKey As String) As NotesDocument
 Declare Sub DBT_SetDescDb(db As NotesDatabase)
 Declare Function DBT_CreateNewReplica(server As String, db As Variant) As Boolean
 Declare Public Function DBT_GetActualDB As NotesDatabase
@@ -37,7 +40,6 @@ Declare Function DBT_GetMailBox() As NotesDatabase
 Declare Function DBT_getSearchKeyByDb(db As notesdatabase) As String
 Declare Public Function getLNerror(stat As Integer) As String
 Declare Sub DBT_InitDescLib()
-Declare Function DBT_RegisterNewDB (db As NotesDatabase, searchKey As String) As NotesDocument
 
 '++LotusScript Development Environment:2:5:(Declarations):0:10
 
@@ -1033,6 +1035,40 @@ End Function
 
 
 
+'++LotusScript Development Environment:2:1:DBT_RegisterNewDB:4:8
+' DataBaseTools -> Sub DBT_RegisterNewDB
+' DCS-Olympiev Mar 22, 2018 
+' *********************************************************************************
+Function DBT_RegisterNewDB (db As NotesDatabase, searchKey As String) As NotesDocument
+		Const FuncName = {DBT_RegisterNewDB} 
+		On Error GoTo Errh
+
+		Dim doc As NotesDocument
+		Dim dbInfo(0 To 3) As String
+		
+		dbInfo(0) = db.Server
+		dbInfo(1) = db.Filepath
+		dbInfo(2) = db.Title
+		dbInfo(3) = db.Replicaid
+		
+		Set doc = DBT_GetDescDb().Createdocument()
+		
+		Call doc.Replaceitemvalue("form", "IS")
+		Call doc.ReplaceItemValue("DbInfo",dbInfo)	
+		Call doc.ReplaceItemValue("DbName",dbInfo(2))
+		Call doc.Replaceitemvalue("SearchKey", searchKey)
+		
+		Call doc.Save(True, False)
+
+		Set DBT_RegisterNewDB = doc
+
+		GoTo EndH
+ErrH:
+		Error Err, FuncName & ", стр. " & CStr(Erl) & Chr(10) & Chr(13) & Error$
+		Resume EndH 
+EndH:
+End Function
+
 '++LotusScript Development Environment:2:2:DBT_SetDescDb:1:8
 Sub DBT_SetDescDb(db As NotesDatabase)
 	On Error GoTo handler
@@ -1401,38 +1437,3 @@ Sub DBT_InitDescLib()
 	End If
 	
 End Sub
-
-
-'++LotusScript Development Environment:2:1:DBT_RegisterNewDB:4:8
-' DataBaseTools -> Sub DBT_RegisterNewDB
-' DCS-Olympiev Mar 22, 2018 
-' *********************************************************************************
-Function DBT_RegisterNewDB (db As NotesDatabase, searchKey As String) As NotesDocument
-		Const FuncName = {DBT_RegisterNewDB} 
-		On Error GoTo Errh
-
-		Dim doc As NotesDocument
-		Dim dbInfo(0 To 3) As String
-		
-		dbInfo(0) = db.Server
-		dbInfo(1) = db.Filepath
-		dbInfo(2) = db.Title
-		dbInfo(3) = db.Replicaid
-		
-		Set doc = DBT_GetDescDb().Createdocument()
-		
-		Call doc.Replaceitemvalue("form", "IS")
-		Call doc.ReplaceItemValue("DbInfo",dbInfo)	
-		Call doc.ReplaceItemValue("DbName",dbInfo(2))
-		Call doc.Replaceitemvalue("SearchKey", searchKey)
-		
-		Call doc.Save(True, False)
-
-		Set DBT_RegisterNewDB = doc
-
-		GoTo EndH
-ErrH:
-		Error Err, FuncName & ", стр. " & CStr(Erl) & Chr(10) & Chr(13) & Error$
-		Resume EndH 
-EndH:
-End Function
